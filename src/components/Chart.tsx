@@ -19,9 +19,6 @@ export function Chart({ data, rollingDays = 3 }: ChartProps) {
   const smoothedMl    = rollingAvg(data.map(d => d.ml),    rollingDays);
   const smoothedTimes = rollingAvg(data.map(d => d.times), rollingDays);
 
-  const maxMl    = Math.max(...smoothedMl,    1);
-  const maxTimes = Math.max(...smoothedTimes, 1);
-
   // SVG coordinate space — no padding needed for labels
   const w = 100;
   const h = 50;
@@ -29,9 +26,15 @@ export function Chart({ data, rollingDays = 3 }: ChartProps) {
   const chartW = w - pad * 2;
   const chartH = h - pad * 2;
 
-  function toX(i: number) {
-    return pad + (i / (data.length - 1)) * chartW;
-  }
+  // Scale based only on the valid (fully-windowed) portion
+  const validFrom      = Math.min(rollingDays - 1, data.length - 1);
+  const validMlData    = smoothedMl.slice(validFrom);
+  const validTimesData = smoothedTimes.slice(validFrom);
+  const validCount     = validMlData.length;
+
+  const maxMl    = Math.max(...validMlData,    1);
+  const maxTimes = Math.max(...validTimesData, 1);
+
   function mlToY(v: number) {
     return pad + chartH - (v / maxMl) * chartH;
   }
@@ -42,13 +45,13 @@ export function Chart({ data, rollingDays = 3 }: ChartProps) {
     return points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' ');
   }
 
-  const mlPoints    = smoothedMl.map((v, i)    => ({ x: toX(i), y: mlToY(v) }));
-  const timesPoints = smoothedTimes.map((v, i) => ({ x: toX(i), y: timesToY(v) }));
+  // Re-map X so valid points span the full chart width edge-to-edge
+  function toXValid(i: number) {
+    return validCount <= 1 ? pad + chartW / 2 : pad + (i / (validCount - 1)) * chartW;
+  }
 
-  // Only draw from the first index where a full window of data exists
-  const validFrom = Math.min(rollingDays - 1, data.length - 1);
-  const validMlPoints    = mlPoints.slice(validFrom);
-  const validTimesPoints = timesPoints.slice(validFrom);
+  const validMlPoints    = validMlData.map((v, i)    => ({ x: toXValid(i), y: mlToY(v) }));
+  const validTimesPoints = validTimesData.map((v, i) => ({ x: toXValid(i), y: timesToY(v) }));
 
   return (
     <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-32" preserveAspectRatio="none">
