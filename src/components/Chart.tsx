@@ -45,6 +45,11 @@ export function Chart({ data, rollingDays = 3 }: ChartProps) {
   const mlPoints    = smoothedMl.map((v, i)    => ({ x: toX(i), y: mlToY(v) }));
   const timesPoints = smoothedTimes.map((v, i) => ({ x: toX(i), y: timesToY(v) }));
 
+  // Only draw from the first index where a full window of data exists
+  const validFrom = Math.min(rollingDays - 1, data.length - 1);
+  const validMlPoints    = mlPoints.slice(validFrom);
+  const validTimesPoints = timesPoints.slice(validFrom);
+
   return (
     <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-32" preserveAspectRatio="none">
       {/* Grid lines */}
@@ -57,15 +62,15 @@ export function Chart({ data, rollingDays = 3 }: ChartProps) {
         />
       ))}
 
-      {/* Times line (orange) */}
-      <path d={path(timesPoints)} fill="none" stroke="#f59e0b" strokeWidth="0.8" strokeLinejoin="round" />
-      {timesPoints.map((p, i) => (
+      {/* Times line (orange) — only valid points */}
+      <path d={path(validTimesPoints)} fill="none" stroke="#f59e0b" strokeWidth="0.8" strokeLinejoin="round" />
+      {validTimesPoints.map((p, i) => (
         <circle key={i} cx={p.x} cy={p.y} r="0.8" fill="#f59e0b" />
       ))}
 
-      {/* Amount line (blue) */}
-      <path d={path(mlPoints)} fill="none" stroke="#2563eb" strokeWidth="0.8" strokeLinejoin="round" />
-      {mlPoints.map((p, i) => (
+      {/* Amount line (blue) — only valid points */}
+      <path d={path(validMlPoints)} fill="none" stroke="#2563eb" strokeWidth="0.8" strokeLinejoin="round" />
+      {validMlPoints.map((p, i) => (
         <circle key={i} cx={p.x} cy={p.y} r="0.8" fill="#2563eb" />
       ))}
     </svg>
