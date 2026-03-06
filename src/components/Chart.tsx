@@ -36,9 +36,18 @@ export function Chart({ data }: ChartProps) {
   const mlPoints = data.map((d, i) => ({ x: toX(i), y: mlToY(d.ml) }));
   const timesPoints = data.map((d, i) => ({ x: toX(i), y: timesToY(d.times) }));
 
-  // Only label the last point of each line to avoid clutter
-  const lastMl = mlPoints[mlPoints.length - 1];
-  const lastTimes = timesPoints[timesPoints.length - 1];
+  function labelIndices(values: number[]): Set<number> {
+    const n = values.length;
+    const maxVal = Math.max(...values);
+    const minVal = Math.min(...values);
+    const maxIdx = values.lastIndexOf(maxVal);
+    const minIdx = values.indexOf(minVal);
+    const midIdx = Math.floor((n - 1) / 2);
+    return new Set([maxIdx, minIdx, midIdx]);
+  }
+
+  const mlLabelIdx = labelIndices(data.map(d => d.ml));
+  const timesLabelIdx = labelIndices(data.map(d => d.times));
 
   return (
     <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-36" preserveAspectRatio="none">
@@ -64,8 +73,8 @@ export function Chart({ data }: ChartProps) {
         <circle key={i} cx={p.x} cy={p.y} r="0.7" fill="#2563eb" />
       ))}
 
-      {/* Times labels — left side of each point */}
-      {timesPoints.map((p, i) => (
+      {/* Times labels — left side of selected points */}
+      {timesPoints.map((p, i) => timesLabelIdx.has(i) && (
         <text
           key={i}
           x={p.x - 0.8}
@@ -78,8 +87,8 @@ export function Chart({ data }: ChartProps) {
         </text>
       ))}
 
-      {/* ml labels — right side of each point */}
-      {mlPoints.map((p, i) => (
+      {/* ml labels — right side of selected points */}
+      {mlPoints.map((p, i) => mlLabelIdx.has(i) && (
         <text
           key={i}
           x={p.x + 0.8}

@@ -19,7 +19,10 @@ export function FeedingList() {
           Today
         </h3>
         {todayFeedings.length > 0 && (
-          <span className="text-xs font-semibold text-muted dark:text-dark-muted">{totalMl} ml</span>
+          <div className="flex items-center gap-1">
+            <span className="text-xs font-semibold text-muted dark:text-dark-muted w-16 text-right">{totalMl} ml</span>
+            <div className="w-6" />
+          </div>
         )}
       </div>
       {todayFeedings.length === 0 ? (
@@ -28,13 +31,11 @@ export function FeedingList() {
         <div className="mt-1">
           {todayFeedings.map(f => (
             <div key={f.id} className="flex items-center justify-between py-px">
-              <div className="flex items-center gap-2 text-sm">
-                <span>{formatTime(new Date(f.time))}</span>
-                {f.is_estimate && <span className="text-xs text-muted dark:text-dark-muted">~est</span>}
+              <span className="text-sm">{formatTime(new Date(f.time))}</span>
+              <div className="flex items-center gap-1">
+                {f.is_estimate && <span className="text-xs bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300 px-1 rounded">~</span>}
                 {f.vitamin_d && <span className="text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-1 rounded">D</span>}
                 {f.probiotics && <span className="text-xs bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 px-1 rounded">P</span>}
-              </div>
-              <div className="flex items-center gap-1">
                 <span className="text-sm font-semibold w-16 text-right">{f.amount_ml} ml</span>
                 <button
                   onClick={() => deleteFeeding(f.id)}

@@ -62,7 +62,7 @@ export function History() {
             <span>{d.label}</span>
             <div className="flex items-center gap-2">
               <span className="font-semibold w-16 text-right">{d.totalMl} ml</span>
-              <span className="text-muted dark:text-dark-muted w-12 text-right">{d.feedCount} times</span>
+              <span className="text-muted dark:text-dark-muted w-16 text-right">{d.feedCount} times</span>
             </div>
           </div>
         ))}
