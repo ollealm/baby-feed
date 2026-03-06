@@ -59,11 +59,11 @@ export function History() {
       <div className="mt-1">
         {days.slice(0, 14).map(d => (
           <div key={d.date.toISOString()} className="flex items-center justify-between py-px text-sm">
+            <span>{d.label}</span>
             <div className="flex items-center gap-2">
-              <span>{d.label}</span>
-              <span className="font-semibold">{d.totalMl} ml</span>
+              <span className="font-semibold w-16 text-right">{d.totalMl} ml</span>
+              <span className="text-muted dark:text-dark-muted w-12 text-right">{d.feedCount} times</span>
             </div>
-            <span className="text-muted dark:text-dark-muted">{d.feedCount} times</span>
           </div>
         ))}
       </div>
