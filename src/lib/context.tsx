@@ -16,7 +16,7 @@ interface AppState {
   addFeeding: (data: NewFeeding) => Promise<void>;
   deleteFeeding: (id: string) => Promise<void>;
   importFeedings: (entries: { amount_ml: number; time: Date }[]) => Promise<void>;
-  updateSettings: (settings: Partial<Pick<Family, 'default_amount_ml' | 'feeding_interval_minutes' | 'day_break_hour' | 'current_formula'>>) => Promise<void>;
+  updateSettings: (settings: Partial<Pick<Family, 'default_amount_ml' | 'feeding_interval_minutes' | 'day_break_hour' | 'current_formula' | 'chart_rolling_days'>>) => Promise<void>;
 }
 
 const AppContext = createContext<AppState | null>(null);
@@ -211,7 +211,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, [family]);
 
-  const updateSettings = useCallback(async (settings: Partial<Pick<Family, 'default_amount_ml' | 'feeding_interval_minutes' | 'day_break_hour' | 'current_formula'>>) => {
+  const updateSettings = useCallback(async (settings: Partial<Pick<Family, 'default_amount_ml' | 'feeding_interval_minutes' | 'day_break_hour' | 'current_formula' | 'chart_rolling_days'>>) => {
     if (!family) return;
 
     const { data } = await supabase

@@ -17,12 +17,17 @@ export function History() {
   if (!family || feedings.length === 0) return null;
 
   const dayBreak = family.day_break_hour;
+  const todayStart = getDayStart(new Date(), dayBreak);
 
   const dayMap = new Map<string, DayData>();
 
   for (const f of feedings) {
     const feedTime = new Date(f.time);
     const dayStart = getDayStart(feedTime, dayBreak);
+
+    // Exclude the current (ongoing) day
+    if (dayStart.getTime() >= todayStart.getTime()) continue;
+
     const key = dayStart.toISOString().slice(0, 10);
 
     if (!dayMap.has(key)) {
@@ -39,10 +44,14 @@ export function History() {
     day.feedCount++;
   }
 
+  // All previous days, newest first for the list
   const days = Array.from(dayMap.values())
     .sort((a, b) => b.date.getTime() - a.date.getTime());
 
-  const chartDays = days.slice(0, 14).reverse();
+  // Chart: oldest first for left-to-right time axis
+  const chartDays = [...days].reverse();
+
+  const rollingDays = family.chart_rolling_days ?? 3;
 
   return (
     <div className="mt-8">
@@ -52,12 +61,15 @@ export function History() {
 
       {chartDays.length > 1 && (
         <div className="mt-2">
-          <Chart data={chartDays.map(d => ({ label: d.label, ml: d.totalMl, times: d.feedCount }))} />
+          <Chart
+            data={chartDays.map(d => ({ label: d.label, ml: d.totalMl, times: d.feedCount }))}
+            rollingDays={rollingDays}
+          />
         </div>
       )}
 
       <div className="mt-1">
-        {days.slice(0, 14).map(d => (
+        {days.map(d => (
           <div key={d.date.toISOString()} className="flex items-center justify-between py-px text-sm">
             <span>{d.label}</span>
             <div className="flex items-center gap-2">

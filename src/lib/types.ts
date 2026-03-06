@@ -5,6 +5,7 @@ export interface Family {
   feeding_interval_minutes: number;
   day_break_hour: number;
   current_formula: string;
+  chart_rolling_days: number;
   created_at: string;
 }
 

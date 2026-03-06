@@ -55,9 +55,7 @@ export default function DataPage() {
         <div className="w-12" />
       </header>
 
-      <ImportData />
-
-      <div className="mt-6 space-y-4">
+      <div className="mt-2 space-y-4">
         {days.map(day => (
           <div key={day.key}>
             <h4 className="text-xs font-semibold text-muted dark:text-dark-muted uppercase tracking-wide border-b border-border dark:border-dark-border pb-1 mb-1">
@@ -71,7 +69,7 @@ export default function DataPage() {
                 <div key={f.id} className="flex items-center justify-between py-px text-sm">
                   <div className="flex items-center gap-2">
                     <span className="text-muted dark:text-dark-muted">{formatTime(new Date(f.time))}</span>
-                    {f.is_estimate && <span className="text-xs text-muted dark:text-dark-muted">~est</span>}
+                    {f.is_estimate && <span className="text-xs bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300 px-1 rounded">~</span>}
                     {f.vitamin_d && <span className="text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-1 rounded">D</span>}
                     {f.probiotics && <span className="text-xs bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 px-1 rounded">P</span>}
                     {f.formula && <span className="text-xs text-muted dark:text-dark-muted">{f.formula}</span>}
@@ -86,6 +84,10 @@ export default function DataPage() {
         {days.length === 0 && (
           <p className="text-sm text-muted dark:text-dark-muted text-center py-8">No data yet</p>
         )}
+      </div>
+
+      <div className="mt-8">
+        <ImportData />
       </div>
     </div>
   );

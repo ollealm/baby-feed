@@ -9,6 +9,7 @@ create table families (
   feeding_interval_minutes integer not null default 180,
   day_break_hour integer not null default 5,
   current_formula text not null default '',
+  chart_rolling_days integer not null default 3,
   created_at timestamptz not null default now()
 );
 
@@ -39,3 +40,6 @@ create policy "Allow all on feedings" on feedings for all using (true) with chec
 
 -- Enable realtime for feedings
 alter publication supabase_realtime add table feedings;
+
+-- Migration: add chart_rolling_days (run if table already exists)
+-- alter table families add column if not exists chart_rolling_days integer not null default 3;

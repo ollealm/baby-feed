@@ -10,11 +10,13 @@ export function Stats() {
   if (!family || feedings.length === 0) return null;
 
   const now = new Date();
-  const h24ago = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-  const h72ago = new Date(now.getTime() - 72 * 60 * 60 * 1000);
+  const h24ago  = new Date(now.getTime() -  24 * 60 * 60 * 1000);
+  const h72ago  = new Date(now.getTime() -  72 * 60 * 60 * 1000);
+  const h240ago = new Date(now.getTime() - 240 * 60 * 60 * 1000);
 
-  const last24 = feedings.filter(f => new Date(f.time) >= h24ago);
-  const last72 = feedings.filter(f => new Date(f.time) >= h72ago);
+  const last24  = feedings.filter(f => new Date(f.time) >= h24ago);
+  const last72  = feedings.filter(f => new Date(f.time) >= h72ago);
+  const last240 = feedings.filter(f => new Date(f.time) >= h240ago);
 
   function calcStats(feeds: Feeding[], hours: number) {
     const count = feeds.length;
@@ -38,8 +40,9 @@ export function Stats() {
     return { avg, total: avgTotal, interval, times: timesPerDay };
   }
 
-  const d24 = calcStats(last24, 24);
-  const d72 = calcStats(last72, 72);
+  const d1  = calcStats(last24,  24);
+  const d3  = calcStats(last72,  72);
+  const d10 = calcStats(last240, 240);
 
   return (
     <div className="mt-8">
@@ -50,16 +53,17 @@ export function Stats() {
         <table className="w-full text-sm">
           <thead>
             <tr className="text-xs text-muted dark:text-dark-muted">
-              <th className="text-left font-normal py-1.5 px-3"></th>
-              <th className="text-right font-normal py-1.5 px-3">24h</th>
-              <th className="text-right font-normal py-1.5 px-3">72h</th>
+              <th className="text-left font-normal py-1.5 px-2"></th>
+              <th className="text-right font-normal py-1.5 px-2">1 day</th>
+              <th className="text-right font-normal py-1.5 px-2">3 days</th>
+              <th className="text-right font-normal py-1.5 px-2">10 days</th>
             </tr>
           </thead>
           <tbody>
-            <Row label="Amount" v1={`${d24.avg} ml`} v3={`${d72.avg} ml`} />
-            <Row label="Total" v1={`${d24.total} ml`} v3={`${d72.total} ml`} />
-            <Row label="Interval" v1={d24.interval > 0 ? formatDuration(d24.interval) : '—'} v3={d72.interval > 0 ? formatDuration(d72.interval) : '—'} />
-            <Row label="Times" v1={d24.times} v3={d72.times} />
+            <Row label="Amount"   v1={`${d1.avg} ml`}   v3={`${d3.avg} ml`}   v10={`${d10.avg} ml`} />
+            <Row label="Total"    v1={`${d1.total} ml`} v3={`${d3.total} ml`} v10={`${d10.total} ml`} />
+            <Row label="Interval" v1={d1.interval  > 0 ? formatDuration(d1.interval)  : '—'} v3={d3.interval  > 0 ? formatDuration(d3.interval)  : '—'} v10={d10.interval > 0 ? formatDuration(d10.interval) : '—'} />
+            <Row label="Times"    v1={d1.times}         v3={d3.times}         v10={d10.times} />
           </tbody>
         </table>
       </div>
@@ -67,12 +71,13 @@ export function Stats() {
   );
 }
 
-function Row({ label, v1, v3 }: { label: string; v1: string; v3: string }) {
+function Row({ label, v1, v3, v10 }: { label: string; v1: string; v3: string; v10: string }) {
   return (
     <tr className="border-t border-border dark:border-dark-border">
-      <td className="py-1.5 px-3 text-muted dark:text-dark-muted">{label}</td>
-      <td className="py-1.5 px-3 text-right font-semibold">{v1}</td>
-      <td className="py-1.5 px-3 text-right font-semibold">{v3}</td>
+      <td className="py-1.5 px-2 text-muted dark:text-dark-muted">{label}</td>
+      <td className="py-1.5 px-2 text-right font-semibold">{v1}</td>
+      <td className="py-1.5 px-2 text-right font-semibold">{v3}</td>
+      <td className="py-1.5 px-2 text-right font-semibold">{v10}</td>
     </tr>
   );
 }

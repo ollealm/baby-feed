@@ -13,6 +13,7 @@ export default function SettingsPage() {
   const [interval, setInterval_] = useState(family?.feeding_interval_minutes ?? 180);
   const [dayBreak, setDayBreak] = useState(family?.day_break_hour ?? 5);
   const [formula, setFormula] = useState(family?.current_formula || FORMULAS[0]);
+  const [rollingDays, setRollingDays] = useState(family?.chart_rolling_days ?? 3);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
@@ -21,6 +22,7 @@ export default function SettingsPage() {
       setInterval_(family.feeding_interval_minutes);
       setDayBreak(family.day_break_hour);
       setFormula(family.current_formula || FORMULAS[0]);
+      setRollingDays(family.chart_rolling_days ?? 3);
     }
   }, [family]);
 
@@ -30,6 +32,7 @@ export default function SettingsPage() {
       feeding_interval_minutes: interval,
       day_break_hour: dayBreak,
       current_formula: formula,
+      chart_rolling_days: rollingDays,
     });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -71,7 +74,7 @@ export default function SettingsPage() {
           />
         </Field>
 
-        <Field label="Day break hour (0-23)">
+        <Field label="Day break hour (0–23)">
           <input
             type="number"
             min={0}
@@ -82,6 +85,20 @@ export default function SettingsPage() {
           />
           <p className="text-xs text-muted dark:text-dark-muted mt-1">
             Day starts at {dayBreak}:00 instead of midnight
+          </p>
+        </Field>
+
+        <Field label="Chart rolling average (days)">
+          <input
+            type="number"
+            min={1}
+            max={30}
+            value={rollingDays}
+            onChange={e => setRollingDays(Number(e.target.value))}
+            className="w-full py-2 px-3 border border-border dark:border-dark-border rounded-lg bg-white dark:bg-dark-surface"
+          />
+          <p className="text-xs text-muted dark:text-dark-muted mt-1">
+            Smoothing window for the history chart
           </p>
         </Field>
 
