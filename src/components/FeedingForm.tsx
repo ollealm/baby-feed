@@ -54,7 +54,14 @@ export function FeedingForm() {
 
   return (
     <div className="bg-surface dark:bg-dark-surface rounded-xl p-4 space-y-4">
-      {/* Amount */}
+      {/* Toggles */}
+      <div className="flex justify-center gap-2">
+        <Toggle active={isEstimate} onToggle={() => setIsEstimate(!isEstimate)} label="Estimate" />
+        <Toggle active={vitaminD} onToggle={() => setVitaminD(!vitaminD)} label="Vitamin D" />
+        <Toggle active={probiotics} onToggle={() => setProbiotics(!probiotics)} label="Probiotics" />
+      </div>
+
+      {/* Amount + Time side by side */}
       <div className="flex items-center justify-center gap-3">
         <button
           onClick={() => adjustAmount(-5)}
@@ -71,13 +78,6 @@ export function FeedingForm() {
         >
           +
         </button>
-      </div>
-
-      {/* Toggles */}
-      <div className="flex justify-center gap-2">
-        <Toggle active={isEstimate} onToggle={() => setIsEstimate(!isEstimate)} label="Estimate" />
-        <Toggle active={vitaminD} onToggle={() => setVitaminD(!vitaminD)} label="Vitamin D" />
-        <Toggle active={probiotics} onToggle={() => setProbiotics(!probiotics)} label="Probiotics" />
       </div>
 
       {/* Time */}

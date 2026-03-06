@@ -57,6 +57,7 @@ export function History() {
     <div className="mt-8">
       <h3 className="text-xs font-semibold text-muted dark:text-dark-muted uppercase tracking-wide">
         History
+        <span className="ml-1 font-normal normal-case">(rolling {rollingDays} days)</span>
       </h3>
 
       {chartDays.length > 1 && (
