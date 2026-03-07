@@ -3,6 +3,7 @@ export interface Family {
   code: string;
   default_amount_ml: number;
   feeding_interval_minutes: number;
+  feeding_span_minutes: number;
   day_break_hour: number;
   current_formula: string;
   chart_rolling_days: number;

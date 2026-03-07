@@ -23,14 +23,21 @@ export function Timer() {
     );
   }
 
-  const elapsed = now.getTime() - lastFeeding.getTime();
+  const elapsed    = now.getTime() - lastFeeding.getTime();
   const intervalMs = family.feeding_interval_minutes * 60 * 1000;
-  const remaining = intervalMs - elapsed;
-  const progress = Math.min(elapsed / intervalMs, 1.5);
+  const spanMs     = (family.feeding_span_minutes ?? 60) * 60 * 1000;
+  const totalMs    = intervalMs + spanMs;
 
-  const progressColor =
-    progress < 0.75 ? 'bg-green-500' : progress < 1 ? 'bg-yellow-500' : 'bg-red-500';
-  const textColor = remaining < 0 ? 'text-red-500' : 'text-muted dark:text-dark-muted';
+  const inWindow = elapsed >= intervalMs && elapsed < totalMs;
+  const overdue  = elapsed >= totalMs;
+
+  // Bar fills 0→100% over the full interval+span range
+  const barProgress = Math.min(elapsed / totalMs, 1);
+  const barColor = overdue ? 'bg-red-500' : inWindow ? 'bg-yellow-400' : 'bg-green-500';
+
+  const toWindowStart = intervalMs - elapsed;
+  const toWindowEnd   = totalMs - elapsed;
+  const overdueBy     = elapsed - totalMs;
 
   return (
     <div className="py-4">
@@ -38,16 +45,24 @@ export function Timer() {
         <p className="text-sm text-muted dark:text-dark-muted">Since last feeding</p>
         <p className="text-3xl font-bold">{formatDuration(elapsed)}</p>
       </div>
+
       <div className="mt-3 h-2 bg-gray-100 dark:bg-dark-surface rounded-full overflow-hidden">
         <div
-          className={`h-full rounded-full transition-all ${progressColor}`}
-          style={{ width: `${Math.min(progress * 100, 100)}%` }}
+          className={`h-full rounded-full transition-all ${barColor}`}
+          style={{ width: `${barProgress * 100}%` }}
         />
       </div>
-      <p className={`text-center text-sm mt-1 ${textColor}`}>
-        {remaining > 0
-          ? `Next feeding in ~${formatDuration(remaining)}`
-          : `Overdue by ${formatDuration(-remaining)}`}
+
+      <p className="text-center text-sm mt-1">
+        {overdue ? (
+          <span className="text-red-500">Overdue · {formatDuration(overdueBy)}</span>
+        ) : inWindow ? (
+          <span className="text-yellow-500 dark:text-yellow-400">Time to eat · {formatDuration(toWindowEnd)} left</span>
+        ) : (
+          <span className="text-muted dark:text-dark-muted">
+            in {formatDuration(toWindowStart)} – {formatDuration(toWindowEnd)}
+          </span>
+        )}
       </p>
     </div>
   );

@@ -7,6 +7,7 @@ create table families (
   code text unique not null,
   default_amount_ml integer not null default 100,
   feeding_interval_minutes integer not null default 180,
+  feeding_span_minutes integer not null default 60,
   day_break_hour integer not null default 5,
   current_formula text not null default '',
   chart_rolling_days integer not null default 3,
@@ -43,3 +44,5 @@ alter publication supabase_realtime add table feedings;
 
 -- Migration: add chart_rolling_days (run if table already exists)
 -- alter table families add column if not exists chart_rolling_days integer not null default 3;
+-- Migration: add feeding_span_minutes (run if table already exists)
+-- alter table families add column if not exists feeding_span_minutes integer not null default 60;

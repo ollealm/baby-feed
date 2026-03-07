@@ -1,47 +1,21 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/context';
 import { formatTime, getDayStart } from '@/lib/utils';
 import { Feeding } from '@/lib/types';
 
-function Badges({ f }: { f: Feeding }) {
-  if (!f.is_estimate && !f.vitamin_d && !f.probiotics) return null;
+function PencilIcon() {
   return (
-    <div className="flex gap-1 mb-0.5">
-      {f.is_estimate && <span className="text-xs bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300 px-1 rounded">~</span>}
-      {f.vitamin_d && <span className="text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-1 rounded">D</span>}
-      {f.probiotics && <span className="text-xs bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 px-1 rounded">P</span>}
-    </div>
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+    </svg>
   );
 }
 
-interface DaySectionProps {
-  label: string;
-  feedings: Feeding[];
-  onDelete?: (id: string) => void;
-}
-
-function DaySection({ label, feedings, onDelete }: DaySectionProps) {
-  const [pendingId, setPendingId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (pendingId) {
-      const t = setTimeout(() => setPendingId(null), 3000);
-      return () => clearTimeout(t);
-    }
-  }, [pendingId]);
-
+function DaySection({ label, feedings }: { label: string; feedings: Feeding[] }) {
+  const { editingFeeding, setEditingFeeding } = useApp();
   const totalMl = feedings.reduce((s, f) => s + f.amount_ml, 0);
-
-  function handleDelete(id: string) {
-    if (pendingId === id) {
-      onDelete!(id);
-      setPendingId(null);
-    } else {
-      setPendingId(id);
-    }
-  }
 
   return (
     <div className="mt-6">
@@ -52,7 +26,7 @@ function DaySection({ label, feedings, onDelete }: DaySectionProps) {
         {feedings.length > 0 && (
           <div className="flex items-center gap-1">
             <span className="text-xs font-semibold text-muted dark:text-dark-muted w-16 text-right">{totalMl} ml</span>
-            {onDelete && <div className="w-6" />}
+            <div className="w-6" />
           </div>
         )}
       </div>
@@ -61,31 +35,35 @@ function DaySection({ label, feedings, onDelete }: DaySectionProps) {
         <p className="text-sm text-muted dark:text-dark-muted mt-1">No feedings</p>
       ) : (
         <div className="mt-1">
-          {feedings.map(f => (
-            <div key={f.id} className="flex items-end justify-between py-px">
-              <span className="text-sm">{formatTime(new Date(f.time))}</span>
-              <div className="flex flex-col items-end">
-                <Badges f={f} />
+          {feedings.map(f => {
+            const isEditing = editingFeeding?.id === f.id;
+            return (
+              <div
+                key={f.id}
+                className={`flex items-center justify-between py-px transition-colors ${
+                  isEditing ? 'bg-primary/10 dark:bg-primary/20 -mx-2 px-2 rounded' : ''
+                }`}
+              >
+                <span className="text-sm">{formatTime(new Date(f.time))}</span>
                 <div className="flex items-center gap-1">
+                  {f.vitamin_d  && <span className="text-xs bg-blue-100   dark:bg-blue-900/40   text-blue-700   dark:text-blue-300   px-1 rounded">D</span>}
+                  {f.probiotics && <span className="text-xs bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 px-1 rounded">P</span>}
+                  {f.is_estimate && <span className="text-xs bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300 px-1 rounded">~</span>}
                   <span className="text-sm font-semibold w-16 text-right">{f.amount_ml} ml</span>
-                  {onDelete ? (
-                    <button
-                      onClick={() => handleDelete(f.id)}
-                      className={`w-6 text-center leading-none transition-colors ${
-                        pendingId === f.id
-                          ? 'text-red-500'
-                          : 'text-gray-300 dark:text-dark-border hover:text-red-400'
-                      }`}
-                    >
-                      {pendingId === f.id ? '✓' : '×'}
-                    </button>
-                  ) : (
-                    <div className="w-6" />
-                  )}
+                  <button
+                    onClick={() => setEditingFeeding(isEditing ? null : f)}
+                    className={`w-6 flex items-center justify-center leading-none transition-colors ${
+                      isEditing
+                        ? 'text-primary'
+                        : 'text-gray-300 dark:text-dark-border hover:text-gray-500 dark:hover:text-dark-muted'
+                    }`}
+                  >
+                    <PencilIcon />
+                  </button>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
@@ -93,14 +71,14 @@ function DaySection({ label, feedings, onDelete }: DaySectionProps) {
 }
 
 export function FeedingList() {
-  const { feedings, family, deleteFeeding } = useApp();
+  const { feedings, family } = useApp();
 
   if (!family) return null;
 
-  const todayStart = getDayStart(new Date(), family.day_break_hour);
+  const todayStart     = getDayStart(new Date(), family.day_break_hour);
   const yesterdayStart = new Date(todayStart.getTime() - 24 * 60 * 60 * 1000);
 
-  const todayFeedings = feedings.filter(f => new Date(f.time) >= todayStart);
+  const todayFeedings     = feedings.filter(f => new Date(f.time) >= todayStart);
   const yesterdayFeedings = feedings.filter(f => {
     const t = new Date(f.time);
     return t >= yesterdayStart && t < todayStart;
@@ -108,8 +86,8 @@ export function FeedingList() {
 
   return (
     <>
-      <DaySection label="Today" feedings={todayFeedings} onDelete={deleteFeeding} />
-      <DaySection label="Yesterday" feedings={yesterdayFeedings} onDelete={deleteFeeding} />
+      <DaySection label="Today"     feedings={todayFeedings} />
+      <DaySection label="Yesterday" feedings={yesterdayFeedings} />
     </>
   );
 }

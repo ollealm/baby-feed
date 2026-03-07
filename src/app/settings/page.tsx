@@ -9,30 +9,34 @@ const FORMULAS = ['BabySemp 1', 'BabySemp 2'];
 export default function SettingsPage() {
   const { family, updateSettings } = useApp();
 
-  const [defaultAmount, setDefaultAmount] = useState(family?.default_amount_ml ?? 100);
-  const [interval, setInterval_] = useState(family?.feeding_interval_minutes ?? 180);
-  const [dayBreak, setDayBreak] = useState(family?.day_break_hour ?? 5);
-  const [formula, setFormula] = useState(family?.current_formula || FORMULAS[0]);
-  const [rollingDays, setRollingDays] = useState(family?.chart_rolling_days ?? 3);
-  const [saved, setSaved] = useState(false);
+  // String state to avoid the "clears to 0" annoyance with number inputs
+  const [defaultAmount, setDefaultAmount] = useState(String(family?.default_amount_ml  ?? 100));
+  const [interval,      setInterval_]     = useState(String(family?.feeding_interval_minutes ?? 180));
+  const [span,          setSpan]          = useState(String(family?.feeding_span_minutes     ?? 60));
+  const [dayBreak,      setDayBreak]      = useState(String(family?.day_break_hour           ?? 5));
+  const [rollingDays,   setRollingDays]   = useState(String(family?.chart_rolling_days       ?? 3));
+  const [formula,       setFormula]       = useState(family?.current_formula || FORMULAS[0]);
+  const [saved,         setSaved]         = useState(false);
 
   useEffect(() => {
     if (family) {
-      setDefaultAmount(family.default_amount_ml);
-      setInterval_(family.feeding_interval_minutes);
-      setDayBreak(family.day_break_hour);
+      setDefaultAmount(String(family.default_amount_ml));
+      setInterval_(String(family.feeding_interval_minutes));
+      setSpan(String(family.feeding_span_minutes ?? 60));
+      setDayBreak(String(family.day_break_hour));
+      setRollingDays(String(family.chart_rolling_days ?? 3));
       setFormula(family.current_formula || FORMULAS[0]);
-      setRollingDays(family.chart_rolling_days ?? 3);
     }
   }, [family]);
 
   async function handleSave() {
     await updateSettings({
-      default_amount_ml: defaultAmount,
-      feeding_interval_minutes: interval,
-      day_break_hour: dayBreak,
+      default_amount_ml:         Math.max(0,  parseInt(defaultAmount) || 0),
+      feeding_interval_minutes:  Math.max(1,  parseInt(interval)      || 180),
+      feeding_span_minutes:      Math.max(1,  parseInt(span)          || 60),
+      day_break_hour:            Math.max(0,  Math.min(23, parseInt(dayBreak) || 0)),
+      chart_rolling_days:        Math.max(1,  parseInt(rollingDays)   || 3),
       current_formula: formula,
-      chart_rolling_days: rollingDays,
     });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -47,6 +51,8 @@ export default function SettingsPage() {
     );
   }
 
+  const inputClass = 'w-full py-2 px-3 border border-border dark:border-dark-border rounded-lg bg-white dark:bg-dark-surface';
+
   return (
     <div>
       <header className="flex items-center justify-between py-4">
@@ -57,60 +63,37 @@ export default function SettingsPage() {
 
       <div className="space-y-5">
         <Field label="Default amount (ml)">
-          <input
-            type="number"
-            value={defaultAmount}
-            onChange={e => setDefaultAmount(Number(e.target.value))}
-            className="w-full py-2 px-3 border border-border dark:border-dark-border rounded-lg bg-white dark:bg-dark-surface"
-          />
+          <input type="number" value={defaultAmount} onChange={e => setDefaultAmount(e.target.value)} className={inputClass} />
         </Field>
 
         <Field label="Feeding interval (minutes)">
-          <input
-            type="number"
-            value={interval}
-            onChange={e => setInterval_(Number(e.target.value))}
-            className="w-full py-2 px-3 border border-border dark:border-dark-border rounded-lg bg-white dark:bg-dark-surface"
-          />
+          <input type="number" value={interval} onChange={e => setInterval_(e.target.value)} className={inputClass} />
+        </Field>
+
+        <Field label="Feeding span (minutes)">
+          <input type="number" value={span} onChange={e => setSpan(e.target.value)} className={inputClass} />
+          <p className="text-xs text-muted dark:text-dark-muted mt-1">
+            Eating window after interval — yellow bar, then overdue
+          </p>
         </Field>
 
         <Field label="Day break hour (0–23)">
-          <input
-            type="number"
-            min={0}
-            max={23}
-            value={dayBreak}
-            onChange={e => setDayBreak(Number(e.target.value))}
-            className="w-full py-2 px-3 border border-border dark:border-dark-border rounded-lg bg-white dark:bg-dark-surface"
-          />
+          <input type="number" min={0} max={23} value={dayBreak} onChange={e => setDayBreak(e.target.value)} className={inputClass} />
           <p className="text-xs text-muted dark:text-dark-muted mt-1">
-            Day starts at {dayBreak}:00 instead of midnight
+            Day starts at {parseInt(dayBreak) || 0}:00 instead of midnight
           </p>
         </Field>
 
         <Field label="Chart rolling average (days)">
-          <input
-            type="number"
-            min={1}
-            max={30}
-            value={rollingDays}
-            onChange={e => setRollingDays(Number(e.target.value))}
-            className="w-full py-2 px-3 border border-border dark:border-dark-border rounded-lg bg-white dark:bg-dark-surface"
-          />
+          <input type="number" min={1} max={30} value={rollingDays} onChange={e => setRollingDays(e.target.value)} className={inputClass} />
           <p className="text-xs text-muted dark:text-dark-muted mt-1">
             Smoothing window for the history chart
           </p>
         </Field>
 
         <Field label="Formula">
-          <select
-            value={formula}
-            onChange={e => setFormula(e.target.value)}
-            className="w-full py-2 px-3 border border-border dark:border-dark-border rounded-lg bg-white dark:bg-dark-surface"
-          >
-            {FORMULAS.map(f => (
-              <option key={f} value={f}>{f}</option>
-            ))}
+          <select value={formula} onChange={e => setFormula(e.target.value)} className={inputClass}>
+            {FORMULAS.map(f => <option key={f} value={f}>{f}</option>)}
           </select>
           <p className="text-xs text-muted dark:text-dark-muted mt-1">
             Saved to all new entries. Imports use current selection.
@@ -127,9 +110,7 @@ export default function SettingsPage() {
         <div className="pt-4 border-t border-border dark:border-dark-border">
           <p className="text-xs text-muted dark:text-dark-muted uppercase tracking-wide mb-1">Family Code</p>
           <p className="text-lg font-mono font-bold">{family.code}</p>
-          <p className="text-xs text-muted dark:text-dark-muted mt-1">
-            Share this code or link to sync with another device
-          </p>
+          <p className="text-xs text-muted dark:text-dark-muted mt-1">Share this code or link to sync with another device</p>
           <p className="text-xs font-mono text-muted dark:text-dark-muted mt-1 break-all">
             {typeof window !== 'undefined' ? window.location.origin : ''}/?family={family.code}
           </p>

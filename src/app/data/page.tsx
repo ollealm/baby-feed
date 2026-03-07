@@ -43,7 +43,7 @@ export default function DataPage() {
       key,
       ...day,
       feedings: [...day.feedings].sort(
-        (a, b) => new Date(a.time).getTime() - new Date(b.time).getTime()
+        (a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()
       ),
     }));
 
