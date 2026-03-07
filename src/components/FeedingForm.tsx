@@ -35,7 +35,7 @@ export function FeedingForm() {
 
   useEffect(() => {
     if (editingFeeding) {
-      setAmount(editingFeeding.amount_ml);
+      setAmount(editingFeeding.amount_ml === 0 ? (family?.default_amount_ml ?? 100) : editingFeeding.amount_ml);
       setTime(new Date(editingFeeding.time));
       setIsEstimate(editingFeeding.is_estimate);
       setVitaminD(editingFeeding.vitamin_d);
@@ -129,7 +129,7 @@ export function FeedingForm() {
       {editingFeeding && (
         <div className="flex justify-between items-center text-xs">
           <span className="text-muted dark:text-dark-muted">
-            Editing {formatTime(new Date(editingFeeding.time))} · {editingFeeding.amount_ml} ml
+            Editing {formatTime(new Date(editingFeeding.time))}{editingFeeding.amount_ml > 0 ? ` · ${editingFeeding.amount_ml} ml` : ' · placeholder'}
           </span>
           <button onClick={handleCancel} className="text-primary font-medium">Cancel</button>
         </div>

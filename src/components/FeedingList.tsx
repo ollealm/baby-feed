@@ -46,8 +46,8 @@ function DaySection({ label, feedings }: { label: string; feedings: Feeding[] })
             return (
               <div
                 key={f.id}
-                onClick={() => setEditingFeeding(isEditing ? null : f)}
-                className={`flex items-center justify-between py-px -mx-2 px-2 rounded transition-colors cursor-pointer ${rowBg}`}
+                onClick={isPlaceholder ? () => setEditingFeeding(isEditing ? null : f) : undefined}
+                className={`flex items-center justify-between py-px -mx-2 px-2 rounded transition-colors ${isPlaceholder ? 'cursor-pointer' : ''} ${rowBg}`}
               >
                 <span className="text-sm">{formatTime(new Date(f.time))}</span>
                 <div className="flex items-center gap-1">
@@ -57,9 +57,12 @@ function DaySection({ label, feedings }: { label: string; feedings: Feeding[] })
                   <span className={`text-sm font-semibold w-16 text-right ${isPlaceholder && !isEditing ? 'text-yellow-600 dark:text-yellow-400' : ''}`}>
                     {isPlaceholder ? '— ml' : `${f.amount_ml} ml`}
                   </span>
-                  <span className={`w-6 flex items-center justify-center leading-none ${
-                    isEditing ? 'text-primary' : 'text-gray-300 dark:text-dark-border'
-                  }`}>
+                  <span
+                    onClick={!isPlaceholder ? () => setEditingFeeding(isEditing ? null : f) : undefined}
+                    className={`w-6 flex items-center justify-center leading-none ${
+                      !isPlaceholder ? 'cursor-pointer' : ''
+                    } ${isEditing ? 'text-primary' : 'text-gray-300 dark:text-dark-border'}`}
+                  >
                     <PencilIcon />
                   </span>
                 </div>
