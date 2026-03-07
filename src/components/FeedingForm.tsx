@@ -136,7 +136,7 @@ export function FeedingForm() {
         <div className="flex gap-2">
           <button
             onClick={handleDeleteFromEdit}
-            className={`w-12 h-12 rounded-xl font-bold text-lg transition-colors select-none ${
+            className={`w-14 py-3 rounded-xl font-bold text-lg transition-colors select-none ${
               confirmDelete
                 ? 'bg-red-500 text-white'
                 : 'bg-gray-100 dark:bg-dark-border text-red-400 hover:text-red-500'

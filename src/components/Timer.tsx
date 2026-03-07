@@ -31,8 +31,8 @@ export function Timer() {
   const inWindow = elapsed >= intervalMs && elapsed < totalMs;
   const overdue  = elapsed >= totalMs;
 
-  // Bar fills 0→100% over the full interval+span range
-  const barProgress = Math.min(elapsed / totalMs, 1);
+  // Bar: fills to 100% exactly at window start, stays full during window and overdue
+  const barProgress = inWindow || overdue ? 1 : Math.min(elapsed / intervalMs, 1);
   const barColor = overdue ? 'bg-red-500' : inWindow ? 'bg-yellow-400' : 'bg-green-500';
 
   const toWindowStart = intervalMs - elapsed;
@@ -57,10 +57,10 @@ export function Timer() {
         {overdue ? (
           <span className="text-red-500">Overdue · {formatDuration(overdueBy)}</span>
         ) : inWindow ? (
-          <span className="text-yellow-500 dark:text-yellow-400">Time to eat · {formatDuration(toWindowEnd)} left</span>
+          <span className="text-yellow-500 dark:text-yellow-400">Time to eat · within {formatDuration(toWindowEnd)}</span>
         ) : (
           <span className="text-muted dark:text-dark-muted">
-            in {formatDuration(toWindowStart)} – {formatDuration(toWindowEnd)}
+            Next in {formatDuration(toWindowStart)} to {formatDuration(toWindowEnd)}
           </span>
         )}
       </p>
