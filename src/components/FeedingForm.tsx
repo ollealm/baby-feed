@@ -4,18 +4,35 @@ import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/context';
 import { roundToNearest15, formatTime } from '@/lib/utils';
 
+function ClockIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+    </svg>
+  );
+}
+
 export function FeedingForm() {
   const { family, addFeeding, updateFeeding, deleteFeeding, editingFeeding, setEditingFeeding } = useApp();
 
-  const [amount, setAmount]       = useState(family?.default_amount_ml ?? 100);
-  const [time, setTime]           = useState(() => roundToNearest15(new Date()));
-  const [isEstimate, setIsEstimate] = useState(false);
-  const [vitaminD, setVitaminD]   = useState(false);
-  const [probiotics, setProbiotics] = useState(false);
-  const [saving, setSaving]       = useState(false);
+  const [amount, setAmount]             = useState(family?.default_amount_ml ?? 100);
+  const [time, setTime]                 = useState(() => roundToNearest15(new Date()));
+  const [isEstimate, setIsEstimate]     = useState(false);
+  const [vitaminD, setVitaminD]         = useState(false);
+  const [probiotics, setProbiotics]     = useState(false);
+  const [saving, setSaving]             = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  // Pre-populate when an editing target is selected
   useEffect(() => {
     if (editingFeeding) {
       setAmount(editingFeeding.amount_ml);
@@ -26,7 +43,6 @@ export function FeedingForm() {
     }
   }, [editingFeeding?.id]);
 
-  // Reset when default amount changes (new family load)
   useEffect(() => {
     if (!editingFeeding && family?.default_amount_ml) {
       setAmount(family.default_amount_ml);
@@ -46,6 +62,16 @@ export function FeedingForm() {
     setSaving(true);
     try {
       await addFeeding({ amount_ml: amount, time, is_estimate: isEstimate, vitamin_d: vitaminD, probiotics });
+      resetForm();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleTimePlaceholder() {
+    setSaving(true);
+    try {
+      await addFeeding({ amount_ml: 0, time, is_estimate: isEstimate, vitamin_d: vitaminD, probiotics });
       resetForm();
     } finally {
       setSaving(false);
@@ -94,6 +120,7 @@ export function FeedingForm() {
   }
 
   const btnBase = 'w-12 h-12 rounded-full bg-gray-100 dark:bg-dark-border text-2xl font-bold active:bg-gray-200 dark:active:bg-dark-muted/30 select-none';
+  const squareBtn = 'w-14 py-3 rounded-xl flex items-center justify-center select-none transition-colors';
 
   return (
     <div className="bg-surface dark:bg-dark-surface rounded-xl p-4 space-y-4">
@@ -131,19 +158,9 @@ export function FeedingForm() {
         <button onClick={() => adjustTime(15)} className={btnBase}>+</button>
       </div>
 
-      {/* Save / Update+Delete */}
+      {/* Action buttons */}
       {editingFeeding ? (
         <div className="flex gap-2">
-          <button
-            onClick={handleDeleteFromEdit}
-            className={`w-14 py-3 rounded-xl font-bold text-lg transition-colors select-none ${
-              confirmDelete
-                ? 'bg-red-500 text-white'
-                : 'bg-gray-100 dark:bg-dark-border text-red-400 hover:text-red-500'
-            }`}
-          >
-            {confirmDelete ? '✓' : '✕'}
-          </button>
           <button
             onClick={handleUpdate}
             disabled={saving}
@@ -151,15 +168,30 @@ export function FeedingForm() {
           >
             {saving ? 'Saving...' : 'Update'}
           </button>
+          <button
+            onClick={handleDeleteFromEdit}
+            className={`${squareBtn} ${confirmDelete ? 'bg-red-600' : 'bg-red-500'} text-white`}
+          >
+            {confirmDelete ? '✓' : <TrashIcon />}
+          </button>
         </div>
       ) : (
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="w-full py-3 bg-primary text-white rounded-xl font-semibold text-lg active:bg-primary-hover disabled:opacity-50 select-none"
-        >
-          {saving ? 'Saving...' : 'Save'}
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex-1 py-3 bg-primary text-white rounded-xl font-semibold text-lg active:bg-primary-hover disabled:opacity-50 select-none"
+          >
+            {saving ? 'Saving...' : 'Save'}
+          </button>
+          <button
+            onClick={handleTimePlaceholder}
+            disabled={saving}
+            className={`${squareBtn} bg-primary text-white active:bg-primary-hover disabled:opacity-50`}
+          >
+            <ClockIcon />
+          </button>
+        </div>
       )}
     </div>
   );

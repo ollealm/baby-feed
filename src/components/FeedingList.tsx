@@ -36,30 +36,32 @@ function DaySection({ label, feedings }: { label: string; feedings: Feeding[] })
       ) : (
         <div className="mt-1">
           {feedings.map(f => {
-            const isEditing = editingFeeding?.id === f.id;
+            const isEditing    = editingFeeding?.id === f.id;
+            const isPlaceholder = f.amount_ml === 0;
+            const rowBg = isEditing
+              ? 'bg-primary/10 dark:bg-primary/20'
+              : isPlaceholder
+              ? 'bg-yellow-100/70 dark:bg-yellow-900/25'
+              : '';
             return (
               <div
                 key={f.id}
-                className={`flex items-center justify-between py-px transition-colors ${
-                  isEditing ? 'bg-primary/10 dark:bg-primary/20 -mx-2 px-2 rounded' : ''
-                }`}
+                onClick={() => setEditingFeeding(isEditing ? null : f)}
+                className={`flex items-center justify-between py-px -mx-2 px-2 rounded transition-colors cursor-pointer ${rowBg}`}
               >
                 <span className="text-sm">{formatTime(new Date(f.time))}</span>
                 <div className="flex items-center gap-1">
-                  {f.vitamin_d  && <span className="text-xs bg-blue-100   dark:bg-blue-900/40   text-blue-700   dark:text-blue-300   px-1 rounded">D</span>}
-                  {f.probiotics && <span className="text-xs bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 px-1 rounded">P</span>}
+                  {f.vitamin_d   && <span className="text-xs bg-blue-100   dark:bg-blue-900/40   text-blue-700   dark:text-blue-300   px-1 rounded">D</span>}
+                  {f.probiotics  && <span className="text-xs bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 px-1 rounded">P</span>}
                   {f.is_estimate && <span className="text-xs bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300 px-1 rounded">~</span>}
-                  <span className="text-sm font-semibold w-16 text-right">{f.amount_ml} ml</span>
-                  <button
-                    onClick={() => setEditingFeeding(isEditing ? null : f)}
-                    className={`w-6 flex items-center justify-center leading-none transition-colors ${
-                      isEditing
-                        ? 'text-primary'
-                        : 'text-gray-300 dark:text-dark-border hover:text-gray-500 dark:hover:text-dark-muted'
-                    }`}
-                  >
+                  <span className={`text-sm font-semibold w-16 text-right ${isPlaceholder && !isEditing ? 'text-yellow-600 dark:text-yellow-400' : ''}`}>
+                    {isPlaceholder ? '— ml' : `${f.amount_ml} ml`}
+                  </span>
+                  <span className={`w-6 flex items-center justify-center leading-none ${
+                    isEditing ? 'text-primary' : 'text-gray-300 dark:text-dark-border'
+                  }`}>
                     <PencilIcon />
-                  </button>
+                  </span>
                 </div>
               </div>
             );
