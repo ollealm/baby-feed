@@ -1,7 +1,8 @@
 'use client';
 
 import { useApp } from '@/lib/context';
-import { formatDuration } from '@/lib/utils';
+import { formatDuration, getDayStart } from '@/lib/utils';
+import { getKcalPer100ml } from '@/lib/nutrition';
 import { Feeding } from '@/lib/types';
 
 export function Stats() {
@@ -25,6 +26,9 @@ export function Stats() {
     const days = hours / 24;
     const avgTotal = days > 1 ? Math.round(total / days) : total;
 
+    const totalKcal = feeds.reduce((s, f) => s + (f.amount_ml / 100) * getKcalPer100ml(f.formula), 0);
+    const avgKcal = days > 1 ? Math.round(totalKcal / days) : Math.round(totalKcal);
+
     let interval = 0;
     if (count >= 2) {
       const sorted = [...feeds].sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
@@ -37,12 +41,39 @@ export function Stats() {
 
     const timesPerDay = days > 1 ? (count / days).toFixed(1) : String(count);
 
-    return { avg, total: avgTotal, interval, times: timesPerDay };
+    return { avg, total: avgTotal, kcal: avgKcal, interval, times: timesPerDay };
+  }
+
+  function calcAtThisTime(daysBack: number): number {
+    const todayStart = getDayStart(now, family!.day_break_hour);
+    const elapsedToday = now.getTime() - todayStart.getTime();
+
+    let total = 0;
+    let count = 0;
+
+    for (let d = 1; d <= daysBack; d++) {
+      const pastDayStart = new Date(todayStart.getTime() - d * 24 * 60 * 60 * 1000);
+      const pastCutoff = new Date(pastDayStart.getTime() + elapsedToday);
+
+      const feedsByCutoff = feedings.filter(f => {
+        const t = new Date(f.time).getTime();
+        return t >= pastDayStart.getTime() && t <= pastCutoff.getTime();
+      });
+
+      total += feedsByCutoff.reduce((s, f) => s + f.amount_ml, 0);
+      count++;
+    }
+
+    return count > 0 ? Math.round(total / count) : 0;
   }
 
   const d1  = calcStats(last24,  24);
   const d3  = calcStats(last72,  72);
   const d10 = calcStats(last240, 240);
+
+  const at1  = calcAtThisTime(1);
+  const at3  = calcAtThisTime(3);
+  const at10 = calcAtThisTime(10);
 
   return (
     <div className="mt-8">
@@ -60,10 +91,12 @@ export function Stats() {
             </tr>
           </thead>
           <tbody>
-            <Row label="Amount"   v1={`${d1.avg} ml`}   v3={`${d3.avg} ml`}   v10={`${d10.avg} ml`} />
-            <Row label="Total"    v1={`${d1.total} ml`} v3={`${d3.total} ml`} v10={`${d10.total} ml`} />
-            <Row label="Interval" v1={d1.interval  > 0 ? formatDuration(d1.interval)  : '—'} v3={d3.interval  > 0 ? formatDuration(d3.interval)  : '—'} v10={d10.interval > 0 ? formatDuration(d10.interval) : '—'} />
-            <Row label="Times"    v1={d1.times}         v3={d3.times}         v10={d10.times} />
+            <Row label="Amount"       v1={`${d1.avg} ml`}    v3={`${d3.avg} ml`}    v10={`${d10.avg} ml`} />
+            <Row label="Total"        v1={`${d1.total} ml`}  v3={`${d3.total} ml`}  v10={`${d10.total} ml`} />
+            <Row label="At this time" v1={`${at1} ml`}       v3={`${at3} ml`}       v10={`${at10} ml`} />
+            <Row label="Calories"     v1={`${d1.kcal} kcal`} v3={`${d3.kcal} kcal`} v10={`${d10.kcal} kcal`} />
+            <Row label="Interval"     v1={d1.interval > 0 ? formatDuration(d1.interval) : '—'} v3={d3.interval > 0 ? formatDuration(d3.interval) : '—'} v10={d10.interval > 0 ? formatDuration(d10.interval) : '—'} />
+            <Row label="Times"        v1={d1.times}          v3={d3.times}          v10={d10.times} />
           </tbody>
         </table>
       </div>

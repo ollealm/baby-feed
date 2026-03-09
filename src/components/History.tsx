@@ -2,12 +2,14 @@
 
 import { useApp } from '@/lib/context';
 import { getDayStart } from '@/lib/utils';
+import { getKcalPer100ml } from '@/lib/nutrition';
 import { Chart } from './Chart';
 
 interface DayData {
   date: Date;
   label: string;
   totalMl: number;
+  totalKcal: number;
   feedCount: number;
 }
 
@@ -35,12 +37,14 @@ export function History() {
         date: dayStart,
         label: dayStart.toLocaleDateString('sv-SE', { month: 'short', day: 'numeric' }),
         totalMl: 0,
+        totalKcal: 0,
         feedCount: 0,
       });
     }
 
     const day = dayMap.get(key)!;
     day.totalMl += f.amount_ml;
+    day.totalKcal += (f.amount_ml / 100) * getKcalPer100ml(f.formula);
     day.feedCount++;
   }
 
@@ -75,6 +79,7 @@ export function History() {
             <span>{d.label}</span>
             <div className="flex items-center gap-2">
               <span className="font-semibold w-16 text-right">{d.totalMl} ml</span>
+              <span className="text-muted dark:text-dark-muted w-16 text-right">{Math.round(d.totalKcal)} kcal</span>
               <span className="text-muted dark:text-dark-muted w-16 text-right">{d.feedCount} times</span>
             </div>
           </div>

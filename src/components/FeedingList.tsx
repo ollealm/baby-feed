@@ -1,5 +1,6 @@
 'use client';
 
+import { Fragment } from 'react';
 import { useApp } from '@/lib/context';
 import { formatTime, getDayStart } from '@/lib/utils';
 import { Feeding } from '@/lib/types';
@@ -13,9 +14,10 @@ function PencilIcon() {
   );
 }
 
-function DaySection({ label, feedings }: { label: string; feedings: Feeding[] }) {
+function DaySection({ label, feedings, timeMarker }: { label: string; feedings: Feeding[]; timeMarker?: Date }) {
   const { editingFeeding, setEditingFeeding } = useApp();
   const totalMl = feedings.reduce((s, f) => s + f.amount_ml, 0);
+  const markerTime = timeMarker ? timeMarker.getTime() : null;
 
   return (
     <div className="mt-6">
@@ -35,7 +37,7 @@ function DaySection({ label, feedings }: { label: string; feedings: Feeding[] })
         <p className="text-sm text-muted dark:text-dark-muted mt-1">No feedings</p>
       ) : (
         <div className="mt-1">
-          {feedings.map(f => {
+          {feedings.map((f, i) => {
             const isEditing    = editingFeeding?.id === f.id;
             const isPlaceholder = f.amount_ml === 0;
             const rowBg = isEditing
@@ -43,34 +45,52 @@ function DaySection({ label, feedings }: { label: string; feedings: Feeding[] })
               : isPlaceholder
               ? 'bg-yellow-100/70 dark:bg-yellow-900/25'
               : '';
+
+            const fTime = new Date(f.time).getTime();
+            const showMarkerBefore = markerTime !== null && i === 0 && markerTime > fTime;
+            const showMarkerAfter = markerTime !== null &&
+              markerTime <= fTime &&
+              (i === feedings.length - 1 || new Date(feedings[i + 1].time).getTime() < markerTime);
+
             return (
-              <div
-                key={f.id}
-                onClick={isPlaceholder ? () => setEditingFeeding(isEditing ? null : f) : undefined}
-                className={`flex items-center justify-between py-px -mx-2 px-2 rounded transition-colors ${isPlaceholder ? 'cursor-pointer' : ''} ${rowBg}`}
-              >
-                <span className="text-sm">{formatTime(new Date(f.time))}</span>
-                <div className="flex items-center gap-1">
-                  {f.vitamin_d   && <span className="text-xs bg-blue-100   dark:bg-blue-900/40   text-blue-700   dark:text-blue-300   px-1 rounded">D</span>}
-                  {f.probiotics  && <span className="text-xs bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 px-1 rounded">P</span>}
-                  {f.is_estimate && <span className="text-xs bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300 px-1 rounded">~</span>}
-                  <span className={`text-sm font-semibold w-16 text-right ${isPlaceholder && !isEditing ? 'text-yellow-600 dark:text-yellow-400' : ''}`}>
-                    {isPlaceholder ? '— ml' : `${f.amount_ml} ml`}
-                  </span>
-                  <span
-                    onClick={!isPlaceholder ? () => setEditingFeeding(isEditing ? null : f) : undefined}
-                    className={`w-6 flex items-center justify-center leading-none ${
-                      !isPlaceholder ? 'cursor-pointer' : ''
-                    } ${isEditing ? 'text-primary' : 'text-gray-300 dark:text-dark-border'}`}
-                  >
-                    <PencilIcon />
-                  </span>
+              <Fragment key={f.id}>
+                {showMarkerBefore && <TimeMarkerLine />}
+                <div
+                  onClick={isPlaceholder ? () => setEditingFeeding(isEditing ? null : f) : undefined}
+                  className={`flex items-center justify-between py-px -mx-2 px-2 rounded transition-colors ${isPlaceholder ? 'cursor-pointer' : ''} ${rowBg}`}
+                >
+                  <span className="text-sm">{formatTime(new Date(f.time))}</span>
+                  <div className="flex items-center gap-1">
+                    {f.vitamin_d   && <span className="text-xs bg-blue-100   dark:bg-blue-900/40   text-blue-700   dark:text-blue-300   px-1 rounded">D</span>}
+                    {f.probiotics  && <span className="text-xs bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 px-1 rounded">P</span>}
+                    {f.is_estimate && <span className="text-xs bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300 px-1 rounded">~</span>}
+                    <span className={`text-sm font-semibold w-16 text-right ${isPlaceholder && !isEditing ? 'text-yellow-600 dark:text-yellow-400' : ''}`}>
+                      {isPlaceholder ? '— ml' : `${f.amount_ml} ml`}
+                    </span>
+                    <span
+                      onClick={!isPlaceholder ? () => setEditingFeeding(isEditing ? null : f) : undefined}
+                      className={`w-6 flex items-center justify-center leading-none ${
+                        !isPlaceholder ? 'cursor-pointer' : ''
+                      } ${isEditing ? 'text-primary' : 'text-gray-300 dark:text-dark-border'}`}
+                    >
+                      <PencilIcon />
+                    </span>
+                  </div>
                 </div>
-              </div>
+                {showMarkerAfter && <TimeMarkerLine />}
+              </Fragment>
             );
           })}
         </div>
       )}
+    </div>
+  );
+}
+
+function TimeMarkerLine() {
+  return (
+    <div className="flex items-center -mx-2 px-2 py-0.5">
+      <div className="flex-1 border-t border-dashed border-gray-300 dark:border-dark-border" />
     </div>
   );
 }
@@ -80,8 +100,10 @@ export function FeedingList() {
 
   if (!family) return null;
 
-  const todayStart     = getDayStart(new Date(), family.day_break_hour);
+  const now = new Date();
+  const todayStart     = getDayStart(now, family.day_break_hour);
   const yesterdayStart = new Date(todayStart.getTime() - 24 * 60 * 60 * 1000);
+  const timeMarker     = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
   const todayFeedings     = feedings.filter(f => new Date(f.time) >= todayStart);
   const yesterdayFeedings = feedings.filter(f => {
@@ -92,7 +114,7 @@ export function FeedingList() {
   return (
     <>
       <DaySection label="Today"     feedings={todayFeedings} />
-      <DaySection label="Yesterday" feedings={yesterdayFeedings} />
+      <DaySection label="Yesterday" feedings={yesterdayFeedings} timeMarker={timeMarker} />
     </>
   );
 }

@@ -42,6 +42,15 @@ function DataIcon() {
   );
 }
 
+function NutritionIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
+      <path d="M22 12A10 10 0 0 0 12 2v10z" />
+    </svg>
+  );
+}
+
 function ReloadIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -112,13 +121,20 @@ export default function Home() {
       <Stats />
       <History />
 
-      <div className="mt-6 flex justify-center">
+      <div className="mt-6 flex justify-center gap-4">
         <Link
           href="/data"
           className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-muted dark:text-dark-muted hover:text-foreground dark:hover:text-dark-foreground"
         >
           <DataIcon />
           <span>All Data</span>
+        </Link>
+        <Link
+          href="/nutrition"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-muted dark:text-dark-muted hover:text-foreground dark:hover:text-dark-foreground"
+        >
+          <NutritionIcon />
+          <span>Nutrition</span>
         </Link>
       </div>
     </div>
