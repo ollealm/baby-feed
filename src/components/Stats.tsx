@@ -80,7 +80,7 @@ export function Stats() {
       <h3 className="text-xs font-semibold text-muted dark:text-dark-muted uppercase tracking-wide">
         Averages
       </h3>
-      <div className="mt-2 bg-surface dark:bg-dark-surface rounded-xl overflow-hidden">
+      <div className="mt-2 bg-surface dark:bg-dark-surface rounded-md overflow-hidden">
         <table className="w-full text-sm">
           <thead>
             <tr className="text-xs text-muted dark:text-dark-muted">

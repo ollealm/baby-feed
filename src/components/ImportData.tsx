@@ -36,13 +36,13 @@ export function ImportData() {
         value={text}
         onChange={e => { setText(e.target.value); setImported(false); }}
         placeholder={`Paste feeding data:\n4/3\n10.30 - 65 ml\n12.30 - 70 ml`}
-        className="w-full h-40 p-3 border border-border dark:border-dark-border rounded-lg text-sm font-mono resize-none bg-white dark:bg-dark-surface"
+        className="w-full h-40 p-3 rounded-md text-sm font-mono resize-none bg-surface dark:bg-dark-surface focus:outline-none focus:ring-2 focus:ring-primary transition-shadow"
       />
       <div className="flex gap-2">
         <button
           onClick={handlePreview}
           disabled={!text.trim()}
-          className="px-4 py-2 bg-gray-100 dark:bg-dark-surface rounded-lg text-sm font-medium disabled:opacity-50"
+          className="px-4 py-2 bg-surface dark:bg-dark-surface rounded text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors disabled:opacity-50"
         >
           Preview
         </button>
@@ -50,7 +50,7 @@ export function ImportData() {
           <button
             onClick={handleImport}
             disabled={importing}
-            className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium disabled:opacity-50"
+            className="px-4 py-2 bg-primary text-white rounded text-sm font-medium disabled:opacity-50"
           >
             {importing ? 'Importing...' : `Import ${preview.length} entries`}
           </button>

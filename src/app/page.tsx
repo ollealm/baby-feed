@@ -93,7 +93,7 @@ export default function Home() {
       <header className="flex items-center justify-between py-3">
         <button
           onClick={() => window.location.reload()}
-          className="p-2 rounded-lg text-muted dark:text-dark-muted hover:text-foreground dark:hover:text-dark-foreground"
+          className="p-2 rounded text-muted dark:text-dark-muted hover:text-foreground dark:hover:text-dark-foreground"
           aria-label="Reload"
         >
           <ReloadIcon />
@@ -101,14 +101,14 @@ export default function Home() {
         <div className="flex items-center gap-1">
           <button
             onClick={toggle}
-            className="p-2 rounded-lg text-muted dark:text-dark-muted hover:text-foreground dark:hover:text-dark-foreground"
+            className="p-2 rounded text-muted dark:text-dark-muted hover:text-foreground dark:hover:text-dark-foreground"
             aria-label="Toggle theme"
           >
             {theme === 'light' ? <MoonIcon /> : <SunIcon />}
           </button>
           <Link
             href="/settings"
-            className="p-2 rounded-lg text-muted dark:text-dark-muted hover:text-foreground dark:hover:text-dark-foreground"
+            className="p-2 rounded text-muted dark:text-dark-muted hover:text-foreground dark:hover:text-dark-foreground"
           >
             <SettingsIcon />
           </Link>
@@ -124,14 +124,14 @@ export default function Home() {
       <div className="mt-6 flex justify-center gap-4">
         <Link
           href="/data"
-          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-muted dark:text-dark-muted hover:text-foreground dark:hover:text-dark-foreground"
+          className="flex items-center gap-2 px-4 py-2 rounded text-sm text-muted dark:text-dark-muted hover:text-foreground dark:hover:text-dark-foreground"
         >
           <DataIcon />
           <span>All Data</span>
         </Link>
         <Link
           href="/nutrition"
-          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-muted dark:text-dark-muted hover:text-foreground dark:hover:text-dark-foreground"
+          className="flex items-center gap-2 px-4 py-2 rounded text-sm text-muted dark:text-dark-muted hover:text-foreground dark:hover:text-dark-foreground"
         >
           <NutritionIcon />
           <span>Nutrition</span>

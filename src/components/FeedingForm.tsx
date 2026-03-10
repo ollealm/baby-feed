@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, ReactNode } from 'react';
 import { useApp } from '@/lib/context';
 import { roundToNearest15, formatTime } from '@/lib/utils';
 
@@ -30,6 +30,7 @@ export function FeedingForm() {
   const [isEstimate, setIsEstimate]     = useState(false);
   const [vitaminD, setVitaminD]         = useState(false);
   const [probiotics, setProbiotics]     = useState(false);
+  const [omega3, setOmega3]             = useState(false);
   const [saving, setSaving]             = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -55,6 +56,7 @@ export function FeedingForm() {
     setIsEstimate(false);
     setVitaminD(false);
     setProbiotics(false);
+    setOmega3(false);
     setConfirmDelete(false);
   }
 
@@ -119,11 +121,11 @@ export function FeedingForm() {
     });
   }
 
-  const btnBase = 'w-12 h-12 rounded-full bg-gray-100 dark:bg-dark-border text-2xl font-bold active:bg-gray-200 dark:active:bg-dark-muted/30 select-none';
-  const squareBtn = 'w-14 py-3 rounded-xl flex items-center justify-center select-none transition-colors';
+  const btnBase = 'w-12 h-12 rounded-md bg-gray-100 dark:bg-dark-border text-2xl font-bold active:bg-gray-200 dark:active:bg-dark-muted/30 select-none';
+  const squareBtn = 'w-14 py-3 rounded-md flex items-center justify-center select-none transition-colors';
 
   return (
-    <div className="bg-surface dark:bg-dark-surface rounded-xl p-4 space-y-4">
+    <div className="bg-surface dark:bg-dark-surface rounded-md p-4 space-y-4">
 
       {/* Editing banner */}
       {editingFeeding && (
@@ -135,11 +137,12 @@ export function FeedingForm() {
         </div>
       )}
 
-      {/* Toggles */}
-      <div className="flex justify-center gap-2">
-        <Toggle active={isEstimate} onToggle={() => setIsEstimate(!isEstimate)} label="Estimate" />
-        <Toggle active={vitaminD}   onToggle={() => setVitaminD(!vitaminD)}     label="Vitamin D" />
-        <Toggle active={probiotics} onToggle={() => setProbiotics(!probiotics)} label="Probiotics" />
+      {/* Toggles — same width as +/- rows */}
+      <div className="flex items-center justify-between w-[232px] mx-auto">
+        <Toggle active={isEstimate} onToggle={() => setIsEstimate(!isEstimate)} color="yellow"><span>~</span></Toggle>
+        <Toggle active={vitaminD}   onToggle={() => setVitaminD(!vitaminD)}     color="blue"><span>D</span></Toggle>
+        <Toggle active={probiotics} onToggle={() => setProbiotics(!probiotics)} color="purple"><BacteriaIcon /></Toggle>
+        <Toggle active={omega3}     onToggle={() => setOmega3(!omega3)}         color="teal"><FishIcon /></Toggle>
       </div>
 
       {/* Amount */}
@@ -158,36 +161,36 @@ export function FeedingForm() {
         <button onClick={() => adjustTime(15)} className={btnBase}>+</button>
       </div>
 
-      {/* Action buttons */}
+      {/* Action buttons — same width as +/- rows */}
       {editingFeeding ? (
-        <div className="flex gap-2">
+        <div className="flex items-center gap-3 w-[232px] mx-auto">
           <button
             onClick={handleUpdate}
             disabled={saving}
-            className="flex-1 py-3 bg-primary text-white rounded-xl font-semibold text-lg active:bg-primary-hover disabled:opacity-50 select-none"
+            className="flex-1 h-12 bg-primary text-white rounded-md font-semibold text-lg active:bg-primary-hover disabled:opacity-50 select-none"
           >
             {saving ? 'Saving...' : 'Update'}
           </button>
           <button
             onClick={handleDeleteFromEdit}
-            className={`${squareBtn} ${confirmDelete ? 'bg-red-600' : 'bg-red-500'} text-white`}
+            className={`w-12 h-12 rounded-md flex items-center justify-center select-none transition-colors ${confirmDelete ? 'bg-red-600' : 'bg-red-500'} text-white`}
           >
             {confirmDelete ? '✓' : <TrashIcon />}
           </button>
         </div>
       ) : (
-        <div className="flex gap-2">
+        <div className="flex items-center gap-3 w-[232px] mx-auto">
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex-1 py-3 bg-primary text-white rounded-xl font-semibold text-lg active:bg-primary-hover disabled:opacity-50 select-none"
+            className="flex-1 h-12 bg-primary text-white rounded-md font-semibold text-lg active:bg-primary-hover disabled:opacity-50 select-none"
           >
             {saving ? 'Saving...' : 'Save'}
           </button>
           <button
             onClick={handleTimePlaceholder}
             disabled={saving}
-            className={`${squareBtn} bg-primary text-white active:bg-primary-hover disabled:opacity-50`}
+            className="w-12 h-12 rounded-md flex items-center justify-center bg-primary text-white active:bg-primary-hover disabled:opacity-50 select-none transition-colors"
           >
             <ClockIcon />
           </button>
@@ -197,17 +200,48 @@ export function FeedingForm() {
   );
 }
 
-function Toggle({ active, onToggle, label }: { active: boolean; onToggle: () => void; label: string }) {
+function FishIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 12 C18 7, 10 7, 6 12 C10 17, 18 17, 22 12Z" />
+      <path d="M6 12 L2 8 M6 12 L2 16" />
+      <circle cx="17" cy="11" r="1" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+function BacteriaIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="4.5" />
+      <line x1="12" y1="2"    x2="12" y2="7.5"  />
+      <line x1="12" y1="16.5" x2="12" y2="22"   />
+      <line x1="2"  y1="12"   x2="7.5" y2="12"  />
+      <line x1="16.5" y1="12" x2="22" y2="12"   />
+      <line x1="5.5"  y1="5.5"  x2="8.7" y2="8.7"  />
+      <line x1="15.3" y1="15.3" x2="18.5" y2="18.5" />
+      <line x1="18.5" y1="5.5"  x2="15.3" y2="8.7"  />
+      <line x1="8.7"  y1="15.3" x2="5.5"  y2="18.5" />
+    </svg>
+  );
+}
+
+const TOGGLE_COLORS = {
+  blue:   { on: 'bg-blue-100   dark:bg-blue-900/40   text-blue-700   dark:text-blue-300',   off: 'bg-gray-100 dark:bg-dark-border text-gray-300 dark:text-gray-600' },
+  purple: { on: 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300', off: 'bg-gray-100 dark:bg-dark-border text-gray-300 dark:text-gray-600' },
+  yellow: { on: 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300', off: 'bg-gray-100 dark:bg-dark-border text-gray-300 dark:text-gray-600' },
+  teal:   { on: 'bg-teal-100   dark:bg-teal-900/40   text-teal-700   dark:text-teal-300',   off: 'bg-gray-100 dark:bg-dark-border text-gray-300 dark:text-gray-600' },
+};
+
+function Toggle({ active, onToggle, color, children }: { active: boolean; onToggle: () => void; color: keyof typeof TOGGLE_COLORS; children: ReactNode }) {
   return (
     <button
       onClick={onToggle}
-      className={`px-3 py-2 rounded-lg text-sm font-medium select-none transition-colors ${
-        active
-          ? 'bg-primary text-white'
-          : 'bg-gray-100 dark:bg-dark-border text-gray-600 dark:text-dark-muted'
+      className={`w-12 h-12 rounded-md flex items-center justify-center text-xl font-bold select-none transition-colors ${
+        active ? TOGGLE_COLORS[color].on : TOGGLE_COLORS[color].off
       }`}
     >
-      {label}
+      {children}
     </button>
   );
 }

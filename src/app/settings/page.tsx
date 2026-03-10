@@ -51,7 +51,7 @@ export default function SettingsPage() {
     );
   }
 
-  const inputClass = 'w-full py-2 px-3 border border-border dark:border-dark-border rounded-lg bg-white dark:bg-dark-surface';
+  const inputClass = 'w-full py-2 px-3 rounded-md bg-surface dark:bg-dark-surface focus:outline-none focus:ring-2 focus:ring-primary transition-shadow';
 
   return (
     <div>
@@ -102,7 +102,7 @@ export default function SettingsPage() {
 
         <button
           onClick={handleSave}
-          className="w-full py-3 bg-primary text-white rounded-xl font-semibold text-lg"
+          className="w-full py-3 bg-primary text-white rounded-md font-semibold text-lg hover:bg-primary-hover transition-colors"
         >
           {saved ? 'Saved!' : 'Save'}
         </button>

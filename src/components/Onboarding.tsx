@@ -43,13 +43,13 @@ export function Onboarding() {
           <button
             onClick={handleCreate}
             disabled={loading}
-            className="w-full py-3 bg-primary text-white rounded-xl font-semibold text-lg disabled:opacity-50"
+            className="w-full py-3 bg-primary text-white rounded-md font-semibold text-lg hover:bg-primary-hover transition-colors disabled:opacity-50"
           >
             {loading ? 'Creating...' : 'New Family'}
           </button>
           <button
             onClick={() => setMode('join')}
-            className="w-full py-3 bg-gray-100 dark:bg-dark-surface rounded-xl font-semibold text-lg"
+            className="w-full py-3 bg-surface dark:bg-dark-surface text-foreground dark:text-dark-foreground rounded-md font-semibold text-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
           >
             Join Family
           </button>
@@ -61,14 +61,14 @@ export function Onboarding() {
             value={code}
             onChange={e => setCode(e.target.value)}
             placeholder="Enter family code"
-            className="w-full py-3 px-4 border border-border dark:border-dark-border rounded-xl text-center text-lg font-mono bg-white dark:bg-dark-surface"
+            className="w-full py-3 px-4 rounded-md text-center text-lg font-mono bg-surface dark:bg-dark-surface focus:outline-none focus:ring-2 focus:ring-primary transition-shadow"
             autoFocus
           />
           {error && <p className="text-red-500 text-sm text-center">{error}</p>}
           <button
             onClick={handleJoin}
             disabled={loading || !code.trim()}
-            className="w-full py-3 bg-primary text-white rounded-xl font-semibold text-lg disabled:opacity-50"
+            className="w-full py-3 bg-primary text-white rounded-md font-semibold text-lg hover:bg-primary-hover transition-colors disabled:opacity-50"
           >
             {loading ? 'Joining...' : 'Join'}
           </button>

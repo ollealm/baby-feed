@@ -72,9 +72,9 @@ export function Chart({ data, rollingDays = 3 }: ChartProps) {
       ))}
 
       {/* Amount line (blue) — only valid points */}
-      <path d={path(validMlPoints)} fill="none" stroke="#2563eb" strokeWidth="0.8" strokeLinejoin="round" />
+      <path d={path(validMlPoints)} fill="none" stroke="#0033CC" strokeWidth="0.8" strokeLinejoin="round" />
       {validMlPoints.map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r="0.8" fill="#2563eb" />
+        <circle key={i} cx={p.x} cy={p.y} r="0.8" fill="#0033CC" />
       ))}
     </svg>
   );
