@@ -75,6 +75,10 @@ export function Stats() {
   const at3  = calcAtThisTime(3);
   const at10 = calcAtThisTime(10);
 
+  const todayStart = getDayStart(now, family.day_break_hour);
+  const todayTotal = feedings
+    .filter(f => new Date(f.time) >= todayStart)
+    .reduce((s, f) => s + f.amount_ml, 0);
 
   return (
     <div className="mt-8">
@@ -92,7 +96,7 @@ export function Stats() {
             </tr>
           </thead>
           <tbody>
-            <Row label={`At this time (${d1.total})`} v1={`${at1} ml`} v3={`${at3} ml`} v10={`${at10} ml`} />
+            <Row label={`At this time (${todayTotal})`} v1={`${at1} ml`} v3={`${at3} ml`} v10={`${at10} ml`} />
             <Row label="Amount"       v1={`${d1.avg} ml`}    v3={`${d3.avg} ml`}    v10={`${d10.avg} ml`} />
             <Row label="Total"        v1={`${d1.total} ml`}  v3={`${d3.total} ml`}  v10={`${d10.total} ml`} />
             <Row label="Calories"     v1={`${d1.kcal} kcal`} v3={`${d3.kcal} kcal`} v10={`${d10.kcal} kcal`} />
