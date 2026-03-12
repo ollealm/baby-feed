@@ -35,6 +35,7 @@ interface AppState {
   deleteFeeding: (id: string) => Promise<void>;
   importFeedings: (entries: { amount_ml: number; time: Date }[]) => Promise<void>;
   updateSettings: (settings: SettingsUpdate) => Promise<void>;
+  signOut: () => void;
 }
 
 const AppContext = createContext<AppState | null>(null);
@@ -43,6 +44,27 @@ export function useApp(): AppState {
   const ctx = useContext(AppContext);
   if (!ctx) throw new Error('useApp must be used within AppProvider');
   return ctx;
+}
+
+function saveFamilyCode(code: string) {
+  localStorage.setItem('familyCode', code);
+  document.cookie = `familyCode=${encodeURIComponent(code)}; max-age=${60 * 60 * 24 * 365}; path=/; SameSite=Lax`;
+}
+
+function clearFamilyCode() {
+  localStorage.removeItem('familyCode');
+  document.cookie = 'familyCode=; max-age=0; path=/; SameSite=Lax';
+}
+
+function getFamilyCode(): string | null {
+  // Try localStorage first, fall back to cookie
+  const fromStorage = localStorage.getItem('familyCode');
+  if (fromStorage) return fromStorage;
+  const match = document.cookie.match(/(?:^|; )familyCode=([^;]*)/);
+  const fromCookie = match ? decodeURIComponent(match[1]) : null;
+  // Restore to localStorage if found in cookie
+  if (fromCookie) localStorage.setItem('familyCode', fromCookie);
+  return fromCookie;
 }
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
@@ -58,11 +80,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     const params = new URLSearchParams(window.location.search);
     const codeFromUrl = params.get('family');
-    const codeFromStorage = localStorage.getItem('familyCode');
+    const codeFromStorage = getFamilyCode();
     const code = codeFromUrl || codeFromStorage;
 
     if (codeFromUrl) {
-      localStorage.setItem('familyCode', codeFromUrl);
+      saveFamilyCode(codeFromUrl);
       window.history.replaceState({}, '', window.location.pathname);
     }
 
@@ -76,13 +98,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       .from('families').select('*').eq('code', code).single();
 
     if (err || !data) {
-      localStorage.removeItem('familyCode');
+      clearFamilyCode();
       setError('Family not found');
       setLoading(false);
       return;
     }
     setFamily(data);
-    localStorage.setItem('familyCode', code);
+    saveFamilyCode(code);
     setLoading(false);
   }
 
@@ -97,6 +119,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (data) setFeedings(data);
     }
     fetchFeedings();
+
+    // Re-fetch when app returns from background (WebSocket may have been suspended)
+    function handleVisibilityChange() {
+      if (document.visibilityState === 'visible') {
+        fetchFeedings();
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     const channel = supabase
       .channel(`feedings-${family.id}`)
@@ -118,7 +148,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      supabase.removeChannel(channel);
+    };
   }, [family?.id]);
 
   const createFamily = useCallback(async (): Promise<string> => {
@@ -129,7 +162,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       .select().single();
     if (err || !data) throw new Error('Failed to create family');
     setFamily(data);
-    localStorage.setItem('familyCode', code);
+    saveFamilyCode(code);
     return code;
   }, []);
 
@@ -138,7 +171,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const { data } = await supabase.from('families').select('*').eq('code', normalized).single();
     if (!data) return false;
     setFamily(data);
-    localStorage.setItem('familyCode', normalized);
+    saveFamilyCode(normalized);
     return true;
   }, []);
 
@@ -212,11 +245,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (data) setFamily(data);
   }, [family]);
 
+  const signOut = useCallback(() => {
+    clearFamilyCode();
+    setFamily(null);
+    setFeedings([]);
+  }, []);
+
   return (
     <AppContext.Provider value={{
       family, feedings, loading, error, configured,
       editingFeeding, setEditingFeeding,
-      createFamily, joinFamily, addFeeding, updateFeeding, deleteFeeding, importFeedings, updateSettings,
+      createFamily, joinFamily, addFeeding, updateFeeding, deleteFeeding, importFeedings, updateSettings, signOut,
     }}>
       {children}
     </AppContext.Provider>

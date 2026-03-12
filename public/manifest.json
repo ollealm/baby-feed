@@ -1,0 +1,10 @@
+{
+  "name": "Baby Feed",
+  "short_name": "Baby Feed",
+  "description": "Track baby formula feedings",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": []
+}

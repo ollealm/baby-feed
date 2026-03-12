@@ -7,7 +7,7 @@ import Link from 'next/link';
 const FORMULAS = ['BabySemp 1', 'BabySemp 2'];
 
 export default function SettingsPage() {
-  const { family, updateSettings } = useApp();
+  const { family, updateSettings, signOut } = useApp();
 
   // String state to avoid the "clears to 0" annoyance with number inputs
   const [defaultAmount, setDefaultAmount] = useState(String(family?.default_amount_ml  ?? 100));
@@ -115,6 +115,13 @@ export default function SettingsPage() {
             {typeof window !== 'undefined' ? window.location.origin : ''}/?family={family.code}
           </p>
         </div>
+
+        <button
+          onClick={signOut}
+          className="text-sm text-muted dark:text-dark-muted hover:text-red-500 dark:hover:text-red-400 transition-colors"
+        >
+          Sign out
+        </button>
       </div>
     </div>
   );

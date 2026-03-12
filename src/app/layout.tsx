@@ -9,6 +9,12 @@ const dmSans = DM_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700"
 export const metadata: Metadata = {
   title: "Baby Feed",
   description: "Track baby formula feedings",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Baby Feed",
+  },
 };
 
 export const viewport: Viewport = {
