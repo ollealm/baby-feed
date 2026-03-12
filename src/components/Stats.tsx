@@ -75,6 +75,7 @@ export function Stats() {
   const at3  = calcAtThisTime(3);
   const at10 = calcAtThisTime(10);
 
+
   return (
     <div className="mt-8">
       <h3 className="text-xs font-semibold text-muted dark:text-dark-muted uppercase tracking-wide">
@@ -91,9 +92,9 @@ export function Stats() {
             </tr>
           </thead>
           <tbody>
+            <Row label={`At this time (${d1.total})`} v1={`${at1} ml`} v3={`${at3} ml`} v10={`${at10} ml`} />
             <Row label="Amount"       v1={`${d1.avg} ml`}    v3={`${d3.avg} ml`}    v10={`${d10.avg} ml`} />
             <Row label="Total"        v1={`${d1.total} ml`}  v3={`${d3.total} ml`}  v10={`${d10.total} ml`} />
-            <Row label="At this time" v1={`${at1} ml`}       v3={`${at3} ml`}       v10={`${at10} ml`} />
             <Row label="Calories"     v1={`${d1.kcal} kcal`} v3={`${d3.kcal} kcal`} v10={`${d10.kcal} kcal`} />
             <Row label="Interval"     v1={d1.interval > 0 ? formatDuration(d1.interval) : '—'} v3={d3.interval > 0 ? formatDuration(d3.interval) : '—'} v10={d10.interval > 0 ? formatDuration(d10.interval) : '—'} />
             <Row label="Times"        v1={d1.times}          v3={d3.times}          v10={d10.times} />
