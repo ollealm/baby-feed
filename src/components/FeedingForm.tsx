@@ -237,10 +237,10 @@ function BacteriaIcon() {
 }
 
 const TOGGLE_COLORS = {
-  blue:   { on: 'bg-blue-100   dark:bg-blue-900/40   text-blue-700   dark:text-blue-300',   off: 'bg-gray-100 dark:bg-dark-border text-gray-300 dark:text-gray-600' },
-  purple: { on: 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300', off: 'bg-gray-100 dark:bg-dark-border text-gray-300 dark:text-gray-600' },
-  yellow: { on: 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300', off: 'bg-gray-100 dark:bg-dark-border text-gray-300 dark:text-gray-600' },
-  teal:   { on: 'bg-teal-100   dark:bg-teal-900/40   text-teal-700   dark:text-teal-300',   off: 'bg-gray-100 dark:bg-dark-border text-gray-300 dark:text-gray-600' },
+  blue:   { on: 'bg-blue-200   dark:bg-blue-800/50   text-blue-800   dark:text-blue-200',   off: 'bg-blue-100   dark:bg-blue-900/40   text-blue-700   dark:text-blue-300' },
+  purple: { on: 'bg-purple-200 dark:bg-purple-800/50 text-purple-800 dark:text-purple-200', off: 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300' },
+  yellow: { on: 'bg-yellow-200 dark:bg-yellow-800/50 text-yellow-800 dark:text-yellow-200', off: 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300' },
+  teal:   { on: 'bg-teal-200   dark:bg-teal-800/50   text-teal-800   dark:text-teal-200',   off: 'bg-teal-100   dark:bg-teal-900/40   text-teal-700   dark:text-teal-300' },
 };
 
 function Toggle({ active, onToggle, color, children }: { active: boolean; onToggle: () => void; color: keyof typeof TOGGLE_COLORS; children: ReactNode }) {
