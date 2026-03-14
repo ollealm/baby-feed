@@ -50,6 +50,16 @@ export function FeedingForm() {
     }
   }, [family?.default_amount_ml]);
 
+  useEffect(() => {
+    function handleVisibility() {
+      if (document.visibilityState === 'visible' && !editingFeeding) {
+        setTime(roundToNearest15(new Date()));
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [editingFeeding]);
+
   function resetForm() {
     setAmount(family?.default_amount_ml ?? 100);
     setTime(roundToNearest15(new Date()));

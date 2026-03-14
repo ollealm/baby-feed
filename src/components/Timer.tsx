@@ -10,7 +10,14 @@ export function Timer() {
 
   useEffect(() => {
     const interval = setInterval(() => setNow(new Date()), 30000);
-    return () => clearInterval(interval);
+    function handleVisibility() {
+      if (document.visibilityState === 'visible') setNow(new Date());
+    }
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, []);
 
   const lastFeeding = feedings.length > 0 ? new Date(feedings[0].time) : null;
