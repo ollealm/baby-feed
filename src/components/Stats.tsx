@@ -29,19 +29,31 @@ export function Stats() {
     const totalKcal = feeds.reduce((s, f) => s + (f.amount_ml / 100) * getKcalPer100ml(f.formula), 0);
     const avgKcal = days > 1 ? Math.round(totalKcal / days) : Math.round(totalKcal);
 
+    // Median amount
+    const medianAmt = count > 0
+      ? (() => { const s = feeds.map(f => f.amount_ml).sort((a, b) => a - b); const m = Math.floor(s.length / 2); return s.length % 2 ? s[m] : Math.round((s[m - 1] + s[m]) / 2); })()
+      : 0;
+
     let interval = 0;
+    let medianInterval = 0;
+    const intervals: number[] = [];
     if (count >= 2) {
       const sorted = [...feeds].sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
       let totalMs = 0;
       for (let i = 1; i < sorted.length; i++) {
-        totalMs += new Date(sorted[i].time).getTime() - new Date(sorted[i - 1].time).getTime();
+        const gap = new Date(sorted[i].time).getTime() - new Date(sorted[i - 1].time).getTime();
+        totalMs += gap;
+        intervals.push(gap);
       }
       interval = totalMs / (sorted.length - 1);
+      intervals.sort((a, b) => a - b);
+      const m = Math.floor(intervals.length / 2);
+      medianInterval = intervals.length % 2 ? intervals[m] : (intervals[m - 1] + intervals[m]) / 2;
     }
 
     const timesPerDay = days > 1 ? (count / days).toFixed(1) : String(count);
 
-    return { avg, total: avgTotal, kcal: avgKcal, interval, times: timesPerDay };
+    return { avg, medianAmt, total: avgTotal, kcal: avgKcal, interval, medianInterval, times: timesPerDay };
   }
 
   function calcAtThisTime(daysBack: number): number {
@@ -65,6 +77,17 @@ export function Stats() {
     }
 
     return count > 0 ? Math.round(total / count) : 0;
+  }
+
+  function intervalClass(ms: number): string {
+    if (ms <= 0) return '—';
+    const totalMin = Math.round(ms / 60000);
+    // Buckets: 15-44 → "0h 30m", 45-74 → "1h 00m", 75-104 → "1h 30m", ...
+    const bucket = Math.round((totalMin - 15) / 30);
+    const clampedBucket = Math.max(0, bucket);
+    const h = Math.floor(clampedBucket / 2);
+    const m = (clampedBucket % 2) * 30;
+    return `${h}h ${String(m).padStart(2, '0')}m`;
   }
 
   const d1  = calcStats(last24,  24);
@@ -96,11 +119,13 @@ export function Stats() {
             </tr>
           </thead>
           <tbody>
-            <Row label={`At this time (${todayTotal})`} v1={`${at1} ml`} v3={`${at3} ml`} v10={`${at10} ml`} />
-            <Row label="Amount"       v1={`${d1.avg} ml`}    v3={`${d3.avg} ml`}    v10={`${d10.avg} ml`} />
+            <Row label={`At this time (${todayTotal} ml)`} v1={`${at1} ml`} v3={`${at3} ml`} v10={`${at10} ml`} />
+            <Row label="Avg amount"   v1={`${d1.avg} ml`}    v3={`${d3.avg} ml`}    v10={`${d10.avg} ml`} />
+            <Row label="Med amount"   v1={`${d1.medianAmt} ml`} v3={`${d3.medianAmt} ml`} v10={`${d10.medianAmt} ml`} />
             <Row label="Total"        v1={`${d1.total} ml`}  v3={`${d3.total} ml`}  v10={`${d10.total} ml`} />
-            <Row label="Calories"     v1={`${d1.kcal} kcal`} v3={`${d3.kcal} kcal`} v10={`${d10.kcal} kcal`} />
-            <Row label="Interval"     v1={d1.interval > 0 ? formatDuration(d1.interval) : '—'} v3={d3.interval > 0 ? formatDuration(d3.interval) : '—'} v10={d10.interval > 0 ? formatDuration(d10.interval) : '—'} />
+            <Row label="Avg interval" v1={d1.interval > 0 ? formatDuration(d1.interval) : '—'} v3={d3.interval > 0 ? formatDuration(d3.interval) : '—'} v10={d10.interval > 0 ? formatDuration(d10.interval) : '—'} />
+            <Row label="Med interval" v1={d1.medianInterval > 0 ? formatDuration(d1.medianInterval) : '—'} v3={d3.medianInterval > 0 ? formatDuration(d3.medianInterval) : '—'} v10={d10.medianInterval > 0 ? formatDuration(d10.medianInterval) : '—'} />
+            <Row label="Typical" v1={intervalClass(d1.interval)} v3={intervalClass(d3.interval)} v10={intervalClass(d10.interval)} />
             <Row label="Times"        v1={d1.times}          v3={d3.times}          v10={d10.times} />
           </tbody>
         </table>
