@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, ReactNode } from 'react';
+import { useState, useEffect, useRef, useCallback, ReactNode } from 'react';
 import { useApp } from '@/lib/context';
 import { roundToNearest15, formatTime } from '@/lib/utils';
 
@@ -33,6 +33,8 @@ export function FeedingForm() {
   const [omega3, setOmega3]             = useState(false);
   const [saving, setSaving]             = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showAmountModal, setShowAmountModal] = useState(false);
+  const [modalAmount, setModalAmount]   = useState('');
 
   useEffect(() => {
     if (editingFeeding) {
@@ -131,6 +133,35 @@ export function FeedingForm() {
     });
   }
 
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressTriggered = useRef(false);
+
+  const handleMinusDown = useCallback(() => {
+    longPressTriggered.current = false;
+    longPressTimer.current = setTimeout(() => {
+      longPressTriggered.current = true;
+      setModalAmount('');
+      setShowAmountModal(true);
+    }, 500);
+  }, []);
+
+  const handleMinusUp = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+    if (!longPressTriggered.current) {
+      adjustAmount(-5);
+    }
+  }, []);
+
+  const handleMinusLeave = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }, []);
+
   const btnBase = 'w-12 h-12 rounded-md bg-gray-100 dark:bg-dark-border text-2xl font-bold active:bg-gray-200 dark:active:bg-dark-muted/30 select-none';
   const squareBtn = 'w-14 py-3 rounded-md flex items-center justify-center select-none transition-colors';
 
@@ -157,7 +188,12 @@ export function FeedingForm() {
 
       {/* Amount */}
       <div className="flex items-center justify-center gap-3">
-        <button onClick={() => adjustAmount(-5)} className={btnBase}>&minus;</button>
+        <button
+          onPointerDown={handleMinusDown}
+          onPointerUp={handleMinusUp}
+          onPointerLeave={handleMinusLeave}
+          className={btnBase}
+        >&minus;</button>
         <span className="text-3xl font-bold w-28 text-center">
           {amount} <span className="text-lg">ml</span>
         </span>
@@ -204,6 +240,55 @@ export function FeedingForm() {
           >
             <ClockIcon />
           </button>
+        </div>
+      )}
+
+      {/* Amount modal */}
+      {showAmountModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={() => setShowAmountModal(false)}>
+          <div className="bg-surface dark:bg-dark-surface rounded-lg p-5 space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-center gap-3">
+              <button
+                onClick={() => setModalAmount(prev => String(Math.max(0, (parseInt(prev) || 0) - 5)))}
+                className={btnBase}
+              >&minus;</button>
+              <input
+                type="number"
+                inputMode="numeric"
+                autoFocus
+                value={modalAmount}
+                onChange={e => setModalAmount(e.target.value)}
+                placeholder="ml"
+                className="w-28 h-12 text-center text-3xl font-bold rounded-md border border-border dark:border-dark-border bg-transparent focus:outline-none focus:ring-1 focus:ring-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+              <button
+                onClick={() => setModalAmount(prev => String((parseInt(prev) || 0) + 5))}
+                className={btnBase}
+              >+</button>
+            </div>
+            <div className="flex gap-3 w-[232px] mx-auto">
+              <button
+                onClick={() => {
+                  const val = parseInt(modalAmount);
+                  if (!isNaN(val) && val >= 0) setAmount(val);
+                  setShowAmountModal(false);
+                }}
+                className="flex-1 h-12 rounded-md bg-gray-200 dark:bg-dark-border font-semibold text-lg"
+              >
+                Set
+              </button>
+              <button
+                onClick={() => {
+                  const val = parseInt(modalAmount);
+                  if (!isNaN(val) && val > 0) setAmount(prev => Math.max(0, prev - val));
+                  setShowAmountModal(false);
+                }}
+                className="flex-1 h-12 rounded-md bg-primary text-white font-semibold text-lg"
+              >
+                Reduce
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
