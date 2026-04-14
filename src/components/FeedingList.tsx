@@ -63,6 +63,7 @@ function DaySection({ label, feedings, timeMarker }: { label: string; feedings: 
                   <div className="flex items-center gap-1">
                     {f.vitamin_d   && <span className="text-xs bg-blue-100   dark:bg-blue-900/40   text-blue-700   dark:text-blue-300   px-1 rounded">D</span>}
                     {f.probiotics  && <span className="text-xs bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 px-1 rounded">P</span>}
+                    {f.omega3      && <span className="text-xs bg-teal-100   dark:bg-teal-900/40   text-teal-700   dark:text-teal-300   px-1 rounded">O</span>}
                     {f.is_estimate && <span className="text-xs bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300 px-1 rounded">~</span>}
                     <span className={`text-sm font-semibold w-16 text-right ${isPlaceholder && !isEditing ? 'text-yellow-600 dark:text-yellow-400' : ''}`}>
                       {isPlaceholder ? '— ml' : `${f.amount_ml} ml`}

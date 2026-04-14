@@ -18,6 +18,7 @@ export interface Feeding {
   is_estimate: boolean;
   vitamin_d: boolean;
   probiotics: boolean;
+  omega3: boolean;
   formula: string;
   created_at: string;
 }
@@ -28,4 +29,5 @@ export interface NewFeeding {
   is_estimate: boolean;
   vitamin_d: boolean;
   probiotics: boolean;
+  omega3: boolean;
 }

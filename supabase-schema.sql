@@ -23,6 +23,7 @@ create table feedings (
   is_estimate boolean not null default false,
   vitamin_d boolean not null default false,
   probiotics boolean not null default false,
+  omega3 boolean not null default false,
   formula text not null default '',
   created_at timestamptz not null default now()
 );
@@ -46,3 +47,5 @@ alter publication supabase_realtime add table feedings;
 -- alter table families add column if not exists chart_rolling_days integer not null default 3;
 -- Migration: add feeding_span_minutes (run if table already exists)
 -- alter table families add column if not exists feeding_span_minutes integer not null default 60;
+-- Migration: add omega3 (run if table already exists)
+-- alter table feedings add column if not exists omega3 boolean not null default false;

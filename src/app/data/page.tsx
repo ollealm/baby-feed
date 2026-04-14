@@ -72,6 +72,7 @@ export default function DataPage() {
                     {f.is_estimate && <span className="text-xs bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300 px-1 rounded">~</span>}
                     {f.vitamin_d && <span className="text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-1 rounded">D</span>}
                     {f.probiotics && <span className="text-xs bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 px-1 rounded">P</span>}
+                    {f.omega3 && <span className="text-xs bg-teal-100 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300 px-1 rounded">O</span>}
                     {f.formula && <span className="text-xs text-muted dark:text-dark-muted">{f.formula}</span>}
                   </div>
                   <span className="font-semibold w-16 text-right">{f.amount_ml} ml</span>

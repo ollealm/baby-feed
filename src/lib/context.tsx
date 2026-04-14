@@ -13,6 +13,7 @@ interface FeedingUpdate {
   is_estimate: boolean;
   vitamin_d: boolean;
   probiotics: boolean;
+  omega3: boolean;
 }
 
 type SettingsUpdate = Partial<Pick<Family,
@@ -186,6 +187,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         is_estimate: data.is_estimate,
         vitamin_d: data.vitamin_d,
         probiotics: data.probiotics,
+        omega3: data.omega3,
         formula: family.current_formula || DEFAULT_FORMULA,
       })
       .select().single();
@@ -206,6 +208,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         is_estimate: data.is_estimate,
         vitamin_d: data.vitamin_d,
         probiotics: data.probiotics,
+        omega3: data.omega3,
       })
       .eq('id', id).select().single();
     if (updated) {
@@ -227,7 +230,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       family_id: family.id,
       amount_ml: e.amount_ml,
       time: e.time.toISOString(),
-      is_estimate: false, vitamin_d: false, probiotics: false,
+      is_estimate: false, vitamin_d: false, probiotics: false, omega3: false,
       formula: family.current_formula || DEFAULT_FORMULA,
     }));
     const { data } = await supabase.from('feedings').insert(rows).select();

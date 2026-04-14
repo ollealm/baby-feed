@@ -43,6 +43,7 @@ export function FeedingForm() {
       setIsEstimate(editingFeeding.is_estimate);
       setVitaminD(editingFeeding.vitamin_d);
       setProbiotics(editingFeeding.probiotics);
+      setOmega3(editingFeeding.omega3);
     }
   }, [editingFeeding?.id]);
 
@@ -75,7 +76,7 @@ export function FeedingForm() {
   async function handleSave() {
     setSaving(true);
     try {
-      await addFeeding({ amount_ml: amount, time, is_estimate: isEstimate, vitamin_d: vitaminD, probiotics });
+      await addFeeding({ amount_ml: amount, time, is_estimate: isEstimate, vitamin_d: vitaminD, probiotics, omega3 });
       resetForm();
     } finally {
       setSaving(false);
@@ -85,7 +86,7 @@ export function FeedingForm() {
   async function handleTimePlaceholder() {
     setSaving(true);
     try {
-      await addFeeding({ amount_ml: 0, time, is_estimate: isEstimate, vitamin_d: vitaminD, probiotics });
+      await addFeeding({ amount_ml: 0, time, is_estimate: isEstimate, vitamin_d: vitaminD, probiotics, omega3 });
       resetForm();
     } finally {
       setSaving(false);
@@ -96,7 +97,7 @@ export function FeedingForm() {
     if (!editingFeeding) return;
     setSaving(true);
     try {
-      await updateFeeding(editingFeeding.id, { amount_ml: amount, time, is_estimate: isEstimate, vitamin_d: vitaminD, probiotics });
+      await updateFeeding(editingFeeding.id, { amount_ml: amount, time, is_estimate: isEstimate, vitamin_d: vitaminD, probiotics, omega3 });
       setEditingFeeding(null);
       resetForm();
     } finally {
