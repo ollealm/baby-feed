@@ -79,14 +79,11 @@ export function Stats() {
     return count > 0 ? Math.round(total / count) : 0;
   }
 
-  function intervalClass(ms: number): string {
+  function typicalInterval(ms: number): string {
     if (ms <= 0) return '—';
-    const totalMin = Math.round(ms / 60000);
-    // Buckets: 15-44 → "0h 30m", 45-74 → "1h 00m", 75-104 → "1h 30m", ...
-    const bucket = Math.round((totalMin - 15) / 30);
-    const clampedBucket = Math.max(0, bucket);
-    const h = Math.floor(clampedBucket / 2);
-    const m = (clampedBucket % 2) * 30;
+    const rounded15 = Math.round(ms / (15 * 60000)) * 15;
+    const h = Math.floor(rounded15 / 60);
+    const m = rounded15 % 60;
     return `${h}h ${String(m).padStart(2, '0')}m`;
   }
 
@@ -125,7 +122,7 @@ export function Stats() {
             <Row label="Total"        v1={`${d1.total} ml`}  v3={`${d3.total} ml`}  v10={`${d10.total} ml`} />
             <Row label="Avg interval" v1={d1.interval > 0 ? formatDuration(d1.interval) : '—'} v3={d3.interval > 0 ? formatDuration(d3.interval) : '—'} v10={d10.interval > 0 ? formatDuration(d10.interval) : '—'} />
             <Row label="Med interval" v1={d1.medianInterval > 0 ? formatDuration(d1.medianInterval) : '—'} v3={d3.medianInterval > 0 ? formatDuration(d3.medianInterval) : '—'} v10={d10.medianInterval > 0 ? formatDuration(d10.medianInterval) : '—'} />
-            <Row label="Typical" v1={intervalClass(d1.interval)} v3={intervalClass(d3.interval)} v10={intervalClass(d10.interval)} />
+            <Row label="Typical" v1={typicalInterval(d1.medianInterval)} v3={typicalInterval(d3.medianInterval)} v10={typicalInterval(d10.medianInterval)} />
             <Row label="Times"        v1={d1.times}          v3={d3.times}          v10={d10.times} />
           </tbody>
         </table>
