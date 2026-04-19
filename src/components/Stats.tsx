@@ -53,7 +53,7 @@ export function Stats() {
 
     const timesPerDay = days > 1 ? (count / days).toFixed(1) : String(count);
 
-    return { avg, medianAmt, total: avgTotal, kcal: avgKcal, interval, medianInterval, times: timesPerDay };
+    return { avg, medianAmt, total: avgTotal, kcal: avgKcal, interval, medianInterval, intervals, times: timesPerDay };
   }
 
   function calcAtThisTime(daysBack: number): number {
@@ -79,11 +79,17 @@ export function Stats() {
     return count > 0 ? Math.round(total / count) : 0;
   }
 
-  function typicalInterval(ms: number): string {
-    if (ms <= 0) return '—';
-    const rounded15 = Math.round(ms / (15 * 60000)) * 15;
-    const h = Math.floor(rounded15 / 60);
-    const m = rounded15 % 60;
+  function typicalInterval(intervals: number[]): string {
+    if (intervals.length === 0) return '—';
+    // Round each gap to nearest 15 min, then find the most common bucket
+    const freq = new Map<number, number>();
+    for (const ms of intervals) {
+      const bucket = Math.round(ms / (15 * 60000)) * 15;
+      freq.set(bucket, (freq.get(bucket) ?? 0) + 1);
+    }
+    const mode = [...freq.entries()].sort((a, b) => b[1] - a[1])[0][0];
+    const h = Math.floor(mode / 60);
+    const m = mode % 60;
     return `${h}h ${String(m).padStart(2, '0')}m`;
   }
 
@@ -122,7 +128,7 @@ export function Stats() {
             <Row label="Total"        v1={`${d1.total} ml`}  v3={`${d3.total} ml`}  v10={`${d10.total} ml`} />
             <Row label="Avg interval" v1={d1.interval > 0 ? formatDuration(d1.interval) : '—'} v3={d3.interval > 0 ? formatDuration(d3.interval) : '—'} v10={d10.interval > 0 ? formatDuration(d10.interval) : '—'} />
             <Row label="Med interval" v1={d1.medianInterval > 0 ? formatDuration(d1.medianInterval) : '—'} v3={d3.medianInterval > 0 ? formatDuration(d3.medianInterval) : '—'} v10={d10.medianInterval > 0 ? formatDuration(d10.medianInterval) : '—'} />
-            <Row label="Typical" v1={typicalInterval(d1.medianInterval)} v3={typicalInterval(d3.medianInterval)} v10={typicalInterval(d10.medianInterval)} />
+            <Row label="Typical" v1={typicalInterval(d1.intervals)} v3={typicalInterval(d3.intervals)} v10={typicalInterval(d10.intervals)} />
             <Row label="Times"        v1={d1.times}          v3={d3.times}          v10={d10.times} />
           </tbody>
         </table>
