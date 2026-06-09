@@ -7,6 +7,7 @@ import { Timer } from '@/components/Timer';
 import { FeedingForm } from '@/components/FeedingForm';
 import { FeedingList } from '@/components/FeedingList';
 import { Stats } from '@/components/Stats';
+import { FeedingPatterns } from '@/components/FeedingPatterns';
 import { History } from '@/components/History';
 import Link from 'next/link';
 
@@ -119,6 +120,7 @@ export default function Home() {
       <FeedingForm />
       <FeedingList />
       <Stats />
+      <FeedingPatterns />
       <History />
 
       <div className="mt-6 flex justify-center gap-4">
