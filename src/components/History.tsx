@@ -1,9 +1,15 @@
 'use client';
 
+import { useState } from 'react';
 import { useApp } from '@/lib/context';
 import { getDayStart } from '@/lib/utils';
 import { getKcalPer100ml } from '@/lib/nutrition';
+import { analyzeFeedingPatterns } from '@/lib/feedingPatterns';
 import { Chart } from './Chart';
+import { FeedingRhythm } from './FeedingRhythm';
+
+const LIST_PREVIEW_DAYS = 14;
+const RHYTHM_DAYS = 30;
 
 interface DayData {
   date: Date;
@@ -15,11 +21,13 @@ interface DayData {
 
 export function History() {
   const { feedings, family } = useApp();
+  const [showAllDays, setShowAllDays] = useState(false);
+  const [analysisNow] = useState(() => new Date());
 
   if (!family || feedings.length === 0) return null;
 
   const dayBreak = family.day_break_hour;
-  const todayStart = getDayStart(new Date(), dayBreak);
+  const todayStart = getDayStart(analysisNow, dayBreak);
 
   const dayMap = new Map<string, DayData>();
 
@@ -56,6 +64,8 @@ export function History() {
   const chartDays = [...days].reverse();
 
   const rollingDays = family.chart_rolling_days ?? 3;
+  const { patterns } = analyzeFeedingPatterns(feedings, dayBreak, { now: analysisNow });
+  const listDays = showAllDays ? days : days.slice(0, LIST_PREVIEW_DAYS);
 
   return (
     <div className="mt-8">
@@ -73,8 +83,22 @@ export function History() {
         </div>
       )}
 
-      <div className="mt-1">
-        {days.map(d => (
+      <h3 className="mt-6 text-xs font-semibold text-muted dark:text-dark-muted uppercase tracking-wide">
+        Rhythm
+        <span className="ml-1 font-normal normal-case">(last {RHYTHM_DAYS} days, dot size = amount)</span>
+      </h3>
+      <div className="mt-2">
+        <FeedingRhythm
+          feedings={feedings}
+          dayBreakHour={dayBreak}
+          patterns={patterns}
+          days={RHYTHM_DAYS}
+          now={analysisNow}
+        />
+      </div>
+
+      <div className="mt-4">
+        {listDays.map(d => (
           <div key={d.date.toISOString()} className="flex items-center justify-between py-px text-sm">
             <span>{d.label}</span>
             <div className="flex items-center gap-2">
@@ -84,6 +108,14 @@ export function History() {
             </div>
           </div>
         ))}
+        {days.length > LIST_PREVIEW_DAYS && (
+          <button
+            onClick={() => setShowAllDays(!showAllDays)}
+            className="mt-1 text-sm text-muted dark:text-dark-muted hover:text-foreground dark:hover:text-dark-foreground"
+          >
+            {showAllDays ? 'Show less' : `Show all (${days.length} days)`}
+          </button>
+        )}
       </div>
     </div>
   );

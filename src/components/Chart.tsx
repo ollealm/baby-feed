@@ -13,69 +13,107 @@ function rollingAvg(values: number[], window: number): number[] {
   });
 }
 
+const W = 360;
+const H = 150;
+const PAD_LEFT = 6;
+const PAD_RIGHT = 6;
+const PAD_TOP = 10;
+const PAD_BOTTOM = 18;
+const PLOT_W = W - PAD_LEFT - PAD_RIGHT;
+const PLOT_H = H - PAD_TOP - PAD_BOTTOM;
+
 export function Chart({ data, rollingDays = 3 }: ChartProps) {
   if (data.length < 2) return null;
 
   const smoothedMl    = rollingAvg(data.map(d => d.ml),    rollingDays);
   const smoothedTimes = rollingAvg(data.map(d => d.times), rollingDays);
 
-  // SVG coordinate space — no padding needed for labels
-  const w = 100;
-  const h = 50;
-  const pad = 1.5;
-  const chartW = w - pad * 2;
-  const chartH = h - pad * 2;
+  // Only the fully-windowed portion is shown
+  const validFrom   = Math.min(rollingDays - 1, data.length - 1);
+  const validDays   = data.slice(validFrom);
+  const validMl     = smoothedMl.slice(validFrom);
+  const validTimes  = smoothedTimes.slice(validFrom);
+  const validCount  = validMl.length;
 
-  // Scale based only on the valid (fully-windowed) portion
-  const validFrom      = Math.min(rollingDays - 1, data.length - 1);
-  const validMlData    = smoothedMl.slice(validFrom);
-  const validTimesData = smoothedTimes.slice(validFrom);
-  const validCount     = validMlData.length;
+  const maxMl    = Math.max(...validMl, ...validDays.map(d => d.ml), 1);
+  const maxTimes = Math.max(...validTimes, 1);
 
-  const maxMl    = Math.max(...validMlData,    1);
-  const maxTimes = Math.max(...validTimesData, 1);
+  const toX     = (i: number) => validCount <= 1 ? PAD_LEFT + PLOT_W / 2 : PAD_LEFT + (i / (validCount - 1)) * PLOT_W;
+  const mlToY   = (v: number) => PAD_TOP + PLOT_H - (v / maxMl) * PLOT_H;
+  const timesToY = (v: number) => PAD_TOP + PLOT_H - (v / maxTimes) * PLOT_H;
+  const path = (points: { x: number; y: number }[]) =>
+    points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' ');
 
-  function mlToY(v: number) {
-    return pad + chartH - (v / maxMl) * chartH;
-  }
-  function timesToY(v: number) {
-    return pad + chartH - (v / maxTimes) * chartH;
-  }
-  function path(points: { x: number; y: number }[]) {
-    return points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' ');
-  }
+  const mlPoints    = validMl.map((v, i)    => ({ x: toX(i), y: mlToY(v) }));
+  const timesPoints = validTimes.map((v, i) => ({ x: toX(i), y: timesToY(v) }));
 
-  // Re-map X so valid points span the full chart width edge-to-edge
-  function toXValid(i: number) {
-    return validCount <= 1 ? pad + chartW / 2 : pad + (i / (validCount - 1)) * chartW;
-  }
+  const barWidth = Math.min(6, (PLOT_W / validCount) * 0.6);
 
-  const validMlPoints    = validMlData.map((v, i)    => ({ x: toXValid(i), y: mlToY(v) }));
-  const validTimesPoints = validTimesData.map((v, i) => ({ x: toXValid(i), y: timesToY(v) }));
+  // ~5 date ticks along the x axis
+  const tickStep = Math.max(1, Math.ceil(validCount / 5));
+  const ticks = validDays
+    .map((d, i) => ({ label: d.label, i }))
+    .filter(({ i }) => i % tickStep === 0);
+
+  const latestMl = Math.round(validMl[validCount - 1]);
+  const latestTimes = validTimes[validCount - 1].toFixed(1);
 
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-32" preserveAspectRatio="none">
-      {/* Grid lines */}
-      {[0, 0.5, 1].map(t => (
-        <line
-          key={t}
-          x1={pad} y1={pad + chartH * (1 - t)}
-          x2={pad + chartW} y2={pad + chartH * (1 - t)}
-          stroke="#e5e7eb" strokeWidth="0.4"
-        />
-      ))}
+    <div>
+      <div className="flex items-center gap-4 text-xs text-muted dark:text-dark-muted px-1">
+        <span className="flex items-center gap-1">
+          <span className="inline-block w-2 h-2 rounded-full bg-primary dark:bg-blue-500" />
+          ml <span className="font-semibold text-foreground dark:text-dark-foreground">{latestMl}</span>
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="inline-block w-2 h-2 rounded-full bg-amber-500" />
+          times <span className="font-semibold text-foreground dark:text-dark-foreground">{latestTimes}</span>
+        </span>
+      </div>
 
-      {/* Times line (orange) — only valid points */}
-      <path d={path(validTimesPoints)} fill="none" stroke="#f59e0b" strokeWidth="0.8" strokeLinejoin="round" />
-      {validTimesPoints.map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r="0.8" fill="#f59e0b" />
-      ))}
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto mt-1">
+        {/* Grid lines */}
+        {[0, 0.5, 1].map(t => (
+          <line
+            key={t}
+            x1={PAD_LEFT} y1={PAD_TOP + PLOT_H * (1 - t)}
+            x2={PAD_LEFT + PLOT_W} y2={PAD_TOP + PLOT_H * (1 - t)}
+            className="stroke-border dark:stroke-dark-border" strokeWidth="1"
+          />
+        ))}
 
-      {/* Amount line (blue) — only valid points */}
-      <path d={path(validMlPoints)} fill="none" stroke="#0033CC" strokeWidth="0.8" strokeLinejoin="round" />
-      {validMlPoints.map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r="0.8" fill="#0033CC" />
-      ))}
-    </svg>
+        {/* Raw daily totals as faint bars */}
+        {validDays.map((d, i) => (
+          <rect
+            key={i}
+            x={toX(i) - barWidth / 2}
+            y={mlToY(d.ml)}
+            width={barWidth}
+            height={PAD_TOP + PLOT_H - mlToY(d.ml)}
+            className="fill-primary dark:fill-blue-500"
+            opacity="0.15"
+          />
+        ))}
+
+        {/* Date ticks */}
+        {ticks.map(({ label, i }, tickIndex) => (
+          <text
+            key={i}
+            x={toX(i)} y={H - 4}
+            fontSize="9"
+            textAnchor={tickIndex === 0 ? 'start' : 'middle'}
+            className="fill-muted dark:fill-dark-muted"
+          >
+            {label}
+          </text>
+        ))}
+
+        {/* Times line (own scale) */}
+        <path d={path(timesPoints)} fill="none" className="stroke-amber-500" strokeWidth="1.5" strokeLinejoin="round" />
+
+        {/* Amount line */}
+        <path d={path(mlPoints)} fill="none" className="stroke-primary dark:stroke-blue-500" strokeWidth="1.5" strokeLinejoin="round" />
+      </svg>
+    </div>
   );
 }

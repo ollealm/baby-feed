@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useApp } from '@/lib/context';
 import {
   FeedingPattern,
@@ -27,7 +27,15 @@ function stripPosition(minute: number, dayBreakHour: number): number {
   return ((minute - dayBreakHour * 60 + DAY_MINUTES) % DAY_MINUTES) / DAY_MINUTES;
 }
 
-function DensityStrip({ analysis, dayBreakHour }: { analysis: FeedingPatternAnalysis; dayBreakHour: number }) {
+function DensityStrip({
+  analysis,
+  dayBreakHour,
+  nowMinute,
+}: {
+  analysis: FeedingPatternAnalysis;
+  dayBreakHour: number;
+  nowMinute: number;
+}) {
   const { density, gridMinutes, patterns } = analysis;
   if (density.length === 0) return null;
 
@@ -40,7 +48,7 @@ function DensityStrip({ analysis, dayBreakHour }: { analysis: FeedingPatternAnal
     rotated.map((value, i) => `L ${(i / density.length) * width} ${STRIP_HEIGHT * (1 - value * 0.92)}`).join(' ') +
     ` L ${width} ${STRIP_HEIGHT} Z`;
 
-  const hourLabels = [0, 6, 12, 18].map((offset) => ({
+  const hourLabels = [0, 3, 6, 9, 12, 15, 18, 21].map((offset) => ({
     offset,
     label: String((dayBreakHour + offset) % 24).padStart(2, '0'),
   }));
@@ -64,6 +72,10 @@ function DensityStrip({ analysis, dayBreakHour }: { analysis: FeedingPatternAnal
             style={{ left: `${stripPosition(pattern.centerMinute, dayBreakHour) * 100}%` }}
           />
         ))}
+        <div
+          className="absolute top-0 bottom-0 w-px bg-amber-500"
+          style={{ left: `${stripPosition(nowMinute, dayBreakHour) * 100}%` }}
+        />
       </div>
       <div className="relative h-4 text-[10px] text-muted dark:text-dark-muted">
         {hourLabels.map(({ offset, label }) => (
@@ -78,7 +90,15 @@ function DensityStrip({ analysis, dayBreakHour }: { analysis: FeedingPatternAnal
 
 export function FeedingPatterns() {
   const { feedings, family } = useApp();
-  const [analysisNow] = useState(() => new Date());
+  const [analysisNow, setAnalysisNow] = useState(() => new Date());
+
+  useEffect(() => {
+    function handleVisibility() {
+      if (document.visibilityState === 'visible') setAnalysisNow(new Date());
+    }
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, []);
 
   if (!family || feedings.length === 0) return null;
 
@@ -96,7 +116,11 @@ export function FeedingPatterns() {
       </h3>
 
       <div className="mt-2 bg-surface dark:bg-dark-surface rounded-md overflow-hidden">
-        <DensityStrip analysis={analysis} dayBreakHour={family.day_break_hour} />
+        <DensityStrip
+          analysis={analysis}
+          dayBreakHour={family.day_break_hour}
+          nowMinute={analysisNow.getHours() * 60 + analysisNow.getMinutes()}
+        />
         {patterns.length === 0 ? (
           <p className="text-sm text-muted dark:text-dark-muted py-2 px-2">
             No repeated time points yet

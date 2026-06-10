@@ -92,6 +92,28 @@ const d1  = calcStats(last24,  24);
     .filter(f => new Date(f.time) >= todayStart)
     .reduce((s, f) => s + f.amount_ml, 0);
 
+  function deltaCell(usual: number) {
+    const delta = todayTotal - usual;
+    const cls = delta < 0 ? 'text-amber-600 dark:text-amber-500' : 'text-emerald-600 dark:text-emerald-500';
+    return <span className={cls}>{delta >= 0 ? '+' : '−'}{Math.abs(delta)} ml</span>;
+  }
+
+  // Average amount eaten in the coming hour (same time window on past days)
+  function calcNextHour(daysBack: number): number {
+    const elapsedToday = now.getTime() - todayStart.getTime();
+    let total = 0;
+
+    for (let d = 1; d <= daysBack; d++) {
+      const windowStart = todayStart.getTime() - d * 24 * 60 * 60 * 1000 + elapsedToday;
+      const windowEnd = windowStart + 60 * 60 * 1000;
+      total += feedings
+        .filter(f => { const t = new Date(f.time).getTime(); return t >= windowStart && t < windowEnd; })
+        .reduce((s, f) => s + f.amount_ml, 0);
+    }
+
+    return Math.round(total / daysBack);
+  }
+
   return (
     <div className="mt-8">
       <h3 className="text-xs font-semibold text-muted dark:text-dark-muted uppercase tracking-wide">
@@ -109,6 +131,8 @@ const d1  = calcStats(last24,  24);
           </thead>
           <tbody>
             <Row label={`At this time (${todayTotal} ml)`} v1={`${at1} ml`} v3={`${at3} ml`} v10={`${at10} ml`} />
+            <Row label="Delta" v1={deltaCell(at1)} v3={deltaCell(at3)} v10={deltaCell(at10)} />
+            <Row label="Next hour" v1={`${calcNextHour(1)} ml`} v3={`${calcNextHour(3)} ml`} v10={`${calcNextHour(10)} ml`} />
             <Row label="Avg amount"   v1={`${d1.avg} ml`}    v3={`${d3.avg} ml`}    v10={`${d10.avg} ml`} />
             <Row label="Med amount"   v1={`${d1.medianAmt} ml`} v3={`${d3.medianAmt} ml`} v10={`${d10.medianAmt} ml`} />
             <Row label="Total"        v1={`${d1.total} ml`}  v3={`${d3.total} ml`}  v10={`${d10.total} ml`} />
@@ -122,7 +146,7 @@ const d1  = calcStats(last24,  24);
   );
 }
 
-function Row({ label, v1, v3, v10 }: { label: string; v1: string; v3: string; v10: string }) {
+function Row({ label, v1, v3, v10 }: { label: string; v1: React.ReactNode; v3: React.ReactNode; v10: React.ReactNode }) {
   return (
     <tr className="border-t border-border dark:border-dark-border">
       <td className="py-1.5 px-2 text-muted dark:text-dark-muted">{label}</td>

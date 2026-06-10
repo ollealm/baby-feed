@@ -35,6 +35,7 @@ export function FeedingForm() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showAmountModal, setShowAmountModal] = useState(false);
   const [modalAmount, setModalAmount]   = useState('');
+  const [modalDirection, setModalDirection] = useState<'reduce' | 'add'>('reduce');
 
   useEffect(() => {
     if (editingFeeding) {
@@ -105,6 +106,18 @@ export function FeedingForm() {
     }
   }
 
+  async function handleUpdatePlaceholder() {
+    if (!editingFeeding) return;
+    setSaving(true);
+    try {
+      await updateFeeding(editingFeeding.id, { amount_ml: 0, time, is_estimate: isEstimate, vitamin_d: vitaminD, probiotics, omega3 });
+      setEditingFeeding(null);
+      resetForm();
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function handleDeleteFromEdit() {
     if (!editingFeeding) return;
     if (confirmDelete) {
@@ -137,26 +150,27 @@ export function FeedingForm() {
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressTriggered = useRef(false);
 
-  const handleMinusDown = useCallback(() => {
+  const handlePressDown = useCallback((direction: 'reduce' | 'add') => {
     longPressTriggered.current = false;
     longPressTimer.current = setTimeout(() => {
       longPressTriggered.current = true;
       setModalAmount('');
+      setModalDirection(direction);
       setShowAmountModal(true);
     }, 500);
   }, []);
 
-  const handleMinusUp = useCallback(() => {
+  const handlePressUp = useCallback((delta: number) => {
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
     }
     if (!longPressTriggered.current) {
-      adjustAmount(-5);
+      adjustAmount(delta);
     }
   }, []);
 
-  const handleMinusLeave = useCallback(() => {
+  const handlePressLeave = useCallback(() => {
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
@@ -183,22 +197,27 @@ export function FeedingForm() {
       <div className="flex items-center justify-between w-[232px] mx-auto">
         <Toggle active={isEstimate} onToggle={() => setIsEstimate(!isEstimate)} color="yellow"><span>~</span></Toggle>
         <Toggle active={vitaminD}   onToggle={() => setVitaminD(!vitaminD)}     color="blue"><span>D</span></Toggle>
-        <Toggle active={probiotics} onToggle={() => setProbiotics(!probiotics)} color="purple"><BacteriaIcon /></Toggle>
+        <Toggle active={probiotics} onToggle={() => setProbiotics(!probiotics)} color="purple"><span>P</span></Toggle>
         <Toggle active={omega3}     onToggle={() => setOmega3(!omega3)}         color="teal"><FishIcon /></Toggle>
       </div>
 
       {/* Amount */}
       <div className="flex items-center justify-center gap-3">
         <button
-          onPointerDown={handleMinusDown}
-          onPointerUp={handleMinusUp}
-          onPointerLeave={handleMinusLeave}
+          onPointerDown={() => handlePressDown('reduce')}
+          onPointerUp={() => handlePressUp(-5)}
+          onPointerLeave={handlePressLeave}
           className={btnBase}
         >&minus;</button>
         <span className="text-3xl font-bold w-28 text-center">
           {amount} <span className="text-lg">ml</span>
         </span>
-        <button onClick={() => adjustAmount(5)} className={btnBase}>+</button>
+        <button
+          onPointerDown={() => handlePressDown('add')}
+          onPointerUp={() => handlePressUp(5)}
+          onPointerLeave={handlePressLeave}
+          className={btnBase}
+        >+</button>
       </div>
 
       {/* Time */}
@@ -212,6 +231,12 @@ export function FeedingForm() {
       {editingFeeding ? (
         <div className="flex items-center gap-3 w-[232px] mx-auto">
           <button
+            onClick={handleDeleteFromEdit}
+            className={`w-12 h-12 rounded-md flex items-center justify-center select-none transition-colors ${confirmDelete ? 'bg-red-600' : 'bg-red-500'} text-white`}
+          >
+            {confirmDelete ? '✓' : <TrashIcon />}
+          </button>
+          <button
             onClick={handleUpdate}
             disabled={saving}
             className="flex-1 h-12 bg-primary text-white rounded-md font-semibold text-lg active:bg-primary-hover disabled:opacity-50 select-none"
@@ -219,10 +244,11 @@ export function FeedingForm() {
             {saving ? 'Saving...' : 'Update'}
           </button>
           <button
-            onClick={handleDeleteFromEdit}
-            className={`w-12 h-12 rounded-md flex items-center justify-center select-none transition-colors ${confirmDelete ? 'bg-red-600' : 'bg-red-500'} text-white`}
+            onClick={handleUpdatePlaceholder}
+            disabled={saving}
+            className="w-12 h-12 rounded-md flex items-center justify-center bg-primary text-white active:bg-primary-hover disabled:opacity-50 select-none transition-colors"
           >
-            {confirmDelete ? '✓' : <TrashIcon />}
+            <ClockIcon />
           </button>
         </div>
       ) : (
@@ -281,12 +307,14 @@ export function FeedingForm() {
               <button
                 onClick={() => {
                   const val = parseInt(modalAmount);
-                  if (!isNaN(val) && val > 0) setAmount(prev => Math.max(0, prev - val));
+                  if (!isNaN(val) && val > 0) {
+                    setAmount(prev => Math.max(0, modalDirection === 'reduce' ? prev - val : prev + val));
+                  }
                   setShowAmountModal(false);
                 }}
                 className="flex-1 h-12 rounded-md bg-primary text-white font-semibold text-lg"
               >
-                Reduce
+                {modalDirection === 'reduce' ? 'Reduce' : 'Add'}
               </button>
             </div>
           </div>
@@ -302,22 +330,6 @@ function FishIcon() {
       <path d="M22 12 C18 7, 10 7, 6 12 C10 17, 18 17, 22 12Z" />
       <path d="M6 12 L2 8 M6 12 L2 16" />
       <circle cx="17" cy="11" r="1" fill="currentColor" stroke="none" />
-    </svg>
-  );
-}
-
-function BacteriaIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="4.5" />
-      <line x1="12" y1="2"    x2="12" y2="7.5"  />
-      <line x1="12" y1="16.5" x2="12" y2="22"   />
-      <line x1="2"  y1="12"   x2="7.5" y2="12"  />
-      <line x1="16.5" y1="12" x2="22" y2="12"   />
-      <line x1="5.5"  y1="5.5"  x2="8.7" y2="8.7"  />
-      <line x1="15.3" y1="15.3" x2="18.5" y2="18.5" />
-      <line x1="18.5" y1="5.5"  x2="15.3" y2="8.7"  />
-      <line x1="8.7"  y1="15.3" x2="5.5"  y2="18.5" />
     </svg>
   );
 }
