@@ -32,6 +32,8 @@ export interface FeedingPatternAnalysis {
   patterns: FeedingPattern[];
   /** Normalized density (0..1) sampled every gridMinutes, index 0 = midnight. */
   density: number[];
+  /** Like density, but each feed weighted by recency x amount: where the milk goes. */
+  amountDensity: number[];
   gridMinutes: number;
   recentFeedCount: number;
   coveredFeedCount: number;
@@ -250,7 +252,12 @@ function assignPointsToBasins(
 }
 
 function emptyAnalysis(gridMinutes: number, recentFeedCount: number, loggedDays: number): FeedingPatternAnalysis {
-  return { patterns: [], density: [], gridMinutes, recentFeedCount, coveredFeedCount: 0, loggedDays };
+  return { patterns: [], density: [], amountDensity: [], gridMinutes, recentFeedCount, coveredFeedCount: 0, loggedDays };
+}
+
+function normalize(density: number[]): number[] {
+  const max = Math.max(...density);
+  return density.map((value) => (max > 0 ? value / max : 0));
 }
 
 export function analyzeFeedingPatterns(
@@ -296,12 +303,20 @@ export function analyzeFeedingPatterns(
 
   const minDaysForPattern = Math.max(3, Math.ceil(loggedDays * 0.15));
   const density = estimateDensity(points, gridMinutes, kernelSdMinutes);
-  const maxDensity = Math.max(...density);
-  const normalizedDensity = density.map((value) => (maxDensity > 0 ? value / maxDensity : 0));
+  const normalizedDensity = normalize(density);
+  // Same curve but weighted by recency x amount, so it shows where the milk
+  // goes rather than when feeds happen. Visualization only — peak detection
+  // stays occurrence-based.
+  const amountPoints = points.map((point) => ({ ...point, weight: point.weight * point.amount_ml }));
+  const normalizedAmountDensity = normalize(estimateDensity(amountPoints, gridMinutes, kernelSdMinutes));
   const { peakIndices, valleyIndices } = watershedPeaks(density, prominenceFraction, maxPatterns);
 
   if (peakIndices.length === 0) {
-    return { ...emptyAnalysis(gridMinutes, recentFeedings.length, loggedDays), density: normalizedDensity };
+    return {
+      ...emptyAnalysis(gridMinutes, recentFeedings.length, loggedDays),
+      density: normalizedDensity,
+      amountDensity: normalizedAmountDensity,
+    };
   }
 
   const patterns = assignPointsToBasins(points, peakIndices, valleyIndices, gridMinutes)
@@ -350,6 +365,7 @@ export function analyzeFeedingPatterns(
   return {
     patterns,
     density: normalizedDensity,
+    amountDensity: normalizedAmountDensity,
     gridMinutes,
     recentFeedCount: recentFeedings.length,
     coveredFeedCount: patterns.reduce((sum, pattern) => sum + pattern.feedCount, 0),

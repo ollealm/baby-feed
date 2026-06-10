@@ -10,7 +10,7 @@ import {
 } from '@/lib/feedingPatterns';
 
 const DAY_MINUTES = 24 * 60;
-const STRIP_HEIGHT = 36;
+const STRIP_HEIGHT = 64;
 
 function frequencyLabel(share: number): string {
   if (share >= 0.67) return 'Strong';
@@ -36,17 +36,20 @@ function DensityStrip({
   dayBreakHour: number;
   nowMinute: number;
 }) {
-  const { density, gridMinutes, patterns } = analysis;
+  const { density, amountDensity, gridMinutes, patterns } = analysis;
   if (density.length === 0) return null;
 
   const width = density.length;
-  // Reorder the curve so x=0 is the day break hour, and close the wrap-around gap.
+  // Reorder a curve so x=0 is the day break hour, and close the wrap-around gap.
   const startIndex = Math.round((dayBreakHour * 60) / gridMinutes) % density.length;
-  const rotated = Array.from({ length: density.length + 1 }, (_, i) => density[(startIndex + i) % density.length]);
-  const path =
-    `M 0 ${STRIP_HEIGHT} ` +
-    rotated.map((value, i) => `L ${(i / density.length) * width} ${STRIP_HEIGHT * (1 - value * 0.92)}`).join(' ') +
-    ` L ${width} ${STRIP_HEIGHT} Z`;
+  const rotate = (values: number[]) =>
+    Array.from({ length: values.length + 1 }, (_, i) => values[(startIndex + i) % values.length]);
+  const curve = (values: number[]) =>
+    rotate(values)
+      .map((value, i) => `${i === 0 ? 'M' : 'L'} ${(i / values.length) * width} ${STRIP_HEIGHT * (1 - value * 0.92)}`)
+      .join(' ');
+  const areaPath = `M 0 ${STRIP_HEIGHT} ${curve(density).replace('M', 'L')} L ${width} ${STRIP_HEIGHT} Z`;
+  const amountPath = amountDensity.length === density.length ? curve(amountDensity) : null;
 
   const hourLabels = [0, 3, 6, 9, 12, 15, 18, 21].map((offset) => ({
     offset,
@@ -63,7 +66,18 @@ function DensityStrip({
           style={{ height: STRIP_HEIGHT }}
           aria-hidden="true"
         >
-          <path d={path} fill="currentColor" opacity="0.25" />
+          <path d={areaPath} fill="currentColor" opacity="0.25" />
+          {amountPath && (
+            <path
+              d={amountPath}
+              fill="none"
+              className="stroke-primary dark:stroke-blue-500"
+              strokeWidth="1.5"
+              strokeLinejoin="round"
+              vectorEffect="non-scaling-stroke"
+              opacity="0.8"
+            />
+          )}
         </svg>
         {patterns.map((pattern) => (
           <div
