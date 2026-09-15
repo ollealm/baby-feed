@@ -113,12 +113,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!family) return;
 
+    // Supabase caps a single request at 1000 rows, so page through until a short page.
     async function fetchFeedings() {
-      const { data } = await supabase
-        .from('feedings').select('*')
-        .eq('family_id', family!.id)
-        .order('time', { ascending: false });
-      if (data) setFeedings(data);
+      const PAGE = 1000;
+      const all: Feeding[] = [];
+      for (let from = 0; ; from += PAGE) {
+        const { data, error } = await supabase
+          .from('feedings').select('*')
+          .eq('family_id', family!.id)
+          .order('time', { ascending: false })
+          .range(from, from + PAGE - 1);
+        if (error || !data) return;
+        all.push(...data);
+        if (data.length < PAGE) break;
+      }
+      setFeedings(all);
     }
     fetchFeedings();
 
