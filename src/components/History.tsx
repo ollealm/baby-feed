@@ -3,20 +3,16 @@
 import { useState } from 'react';
 import { useApp } from '@/lib/context';
 import { getDayStart } from '@/lib/utils';
-import { getKcalPer100ml } from '@/lib/nutrition';
+import { feedingKcal } from '@/lib/nutrition';
 import { analyzeFeedingPatterns } from '@/lib/feedingPatterns';
-import { Chart } from './Chart';
+import { Chart, ChartDay } from './Chart';
 import { FeedingRhythm } from './FeedingRhythm';
 
 const LIST_PREVIEW_DAYS = 14;
 const RHYTHM_DAYS = 30;
 
-interface DayData {
+interface DayData extends ChartDay {
   date: Date;
-  label: string;
-  totalMl: number;
-  totalKcal: number;
-  feedCount: number;
 }
 
 export function History() {
@@ -44,16 +40,21 @@ export function History() {
       dayMap.set(key, {
         date: dayStart,
         label: dayStart.toLocaleDateString('sv-SE', { month: 'short', day: 'numeric' }),
-        totalMl: 0,
-        totalKcal: 0,
-        feedCount: 0,
+        formulaKcal: 0,
+        foodKcal: 0,
+        bottles: 0,
+        meals: 0,
       });
     }
 
     const day = dayMap.get(key)!;
-    day.totalMl += f.amount_ml;
-    day.totalKcal += (f.amount_ml / 100) * getKcalPer100ml(f.formula);
-    day.feedCount++;
+    if (f.is_food) {
+      day.foodKcal += feedingKcal(f);
+      day.meals++;
+    } else {
+      day.formulaKcal += feedingKcal(f);
+      day.bottles++;
+    }
   }
 
   // All previous days, newest first for the list
@@ -67,25 +68,24 @@ export function History() {
   const { patterns } = analyzeFeedingPatterns(feedings, dayBreak, { now: analysisNow });
   const listDays = showAllDays ? days : days.slice(0, LIST_PREVIEW_DAYS);
 
+  const col = 'w-14 text-right';
+
   return (
     <div className="mt-8">
       <h3 className="text-xs font-semibold text-muted dark:text-dark-muted uppercase tracking-wide">
         History
-        <span className="ml-1 font-normal normal-case">(rolling {rollingDays} days)</span>
+        <span className="ml-1 font-normal normal-case">(kcal per day, rolling {rollingDays} days)</span>
       </h3>
 
       {chartDays.length > 1 && (
         <div className="mt-2">
-          <Chart
-            data={chartDays.map(d => ({ label: d.label, ml: d.totalMl, times: d.feedCount }))}
-            rollingDays={rollingDays}
-          />
+          <Chart data={chartDays} rollingDays={rollingDays} />
         </div>
       )}
 
       <h3 className="mt-6 text-xs font-semibold text-muted dark:text-dark-muted uppercase tracking-wide">
         Rhythm
-        <span className="ml-1 font-normal normal-case">(last {RHYTHM_DAYS} days, dot size = amount)</span>
+        <span className="ml-1 font-normal normal-case">(last {RHYTHM_DAYS} days)</span>
       </h3>
       <div className="mt-2">
         <FeedingRhythm
@@ -98,13 +98,23 @@ export function History() {
       </div>
 
       <div className="mt-4">
+        <div className="flex items-center justify-between py-px text-xs text-muted dark:text-dark-muted">
+          <span />
+          <div className="flex items-center gap-2">
+            <span className={col}>formula</span>
+            <span className={col}>food</span>
+            <span className={col}>total</span>
+            <span className={col}>times</span>
+          </div>
+        </div>
         {listDays.map(d => (
           <div key={d.date.toISOString()} className="flex items-center justify-between py-px text-sm">
             <span>{d.label}</span>
             <div className="flex items-center gap-2">
-              <span className="font-semibold w-16 text-right">{d.totalMl} ml</span>
-              <span className="text-muted dark:text-dark-muted w-16 text-right">{Math.round(d.totalKcal)} kcal</span>
-              <span className="text-muted dark:text-dark-muted w-16 text-right">{d.feedCount} times</span>
+              <span className={`${col} text-muted dark:text-dark-muted`}>{Math.round(d.formulaKcal)}</span>
+              <span className={`${col} text-muted dark:text-dark-muted`}>{Math.round(d.foodKcal)}</span>
+              <span className={`${col} font-semibold`}>{Math.round(d.formulaKcal + d.foodKcal)}</span>
+              <span className={`${col} text-muted dark:text-dark-muted`}>{d.bottles}+{d.meals}</span>
             </div>
           </div>
         ))}

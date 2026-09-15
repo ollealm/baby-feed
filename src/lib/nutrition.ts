@@ -89,6 +89,18 @@ export function getKcalPer100ml(formula: string): number {
   return FORMULA_DATA[formula]?.['Energy'] ?? 67;
 }
 
+type FeedingLike = { amount_ml: number; is_food: boolean; formula: string };
+
+/** ml of formula in this entry (0 for real-food entries). */
+export function formulaMl(f: FeedingLike): number {
+  return f.is_food ? 0 : f.amount_ml;
+}
+
+/** kcal from this entry: real-food entries store kcal directly, formula is converted from ml. */
+export function feedingKcal(f: FeedingLike): number {
+  return f.is_food ? f.amount_ml : (f.amount_ml / 100) * getKcalPer100ml(f.formula);
+}
+
 export const CATEGORIES = [
   { key: 'macro', label: 'Macronutrients' },
   { key: 'fat', label: 'Fatty Acids' },

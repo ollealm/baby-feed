@@ -4,6 +4,8 @@ import { useState, useEffect, useRef, useCallback, ReactNode } from 'react';
 import { useApp } from '@/lib/context';
 import { roundToNearest15, formatTime } from '@/lib/utils';
 
+const DEFAULT_FOOD_KCAL = 50;
+
 function ClockIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -22,12 +24,28 @@ function TrashIcon() {
   );
 }
 
+/** Spoon + fork — used for the real-food toggle and list badges. */
+export function FoodIcon({ size = 22 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      {/* fork */}
+      <path d="M6 3v6a2.5 2.5 0 0 0 5 0V3" />
+      <path d="M8.5 3v18" />
+      {/* spoon */}
+      <path d="M17.5 3c-2 0-3 2.5-3 5s1.3 4 3 4 3-1.5 3-4-1-5-3-5z" />
+      <path d="M17.5 12v9" />
+    </svg>
+  );
+}
+
 export function FeedingForm() {
   const { family, addFeeding, updateFeeding, deleteFeeding, editingFeeding, setEditingFeeding } = useApp();
 
   const [amount, setAmount]             = useState(family?.default_amount_ml ?? 100);
   const [time, setTime]                 = useState(() => roundToNearest15(new Date()));
+  // Legacy flag: no longer settable in the UI, but preserved when editing old entries.
   const [isEstimate, setIsEstimate]     = useState(false);
+  const [isFood, setIsFood]             = useState(false);
   const [vitaminD, setVitaminD]         = useState(false);
   const [probiotics, setProbiotics]     = useState(false);
   const [omega3, setOmega3]             = useState(false);
@@ -36,12 +54,18 @@ export function FeedingForm() {
   const [showAmountModal, setShowAmountModal] = useState(false);
   const [modalAmount, setModalAmount]   = useState('');
   const [modalDirection, setModalDirection] = useState<'reduce' | 'add'>('reduce');
+  // kcal calculator (food mode) — kcal/100g is kept between opens since the same jar is often logged repeatedly
+  const [kcalPer100g, setKcalPer100g]   = useState('');
+  const [grams, setGrams]               = useState('');
+
+  const unit = isFood ? 'kcal' : 'ml';
 
   useEffect(() => {
     if (editingFeeding) {
       setAmount(editingFeeding.amount_ml === 0 ? (family?.default_amount_ml ?? 100) : editingFeeding.amount_ml);
       setTime(new Date(editingFeeding.time));
       setIsEstimate(editingFeeding.is_estimate);
+      setIsFood(editingFeeding.is_food);
       setVitaminD(editingFeeding.vitamin_d);
       setProbiotics(editingFeeding.probiotics);
       setOmega3(editingFeeding.omega3);
@@ -49,7 +73,7 @@ export function FeedingForm() {
   }, [editingFeeding?.id]);
 
   useEffect(() => {
-    if (!editingFeeding && family?.default_amount_ml) {
+    if (!editingFeeding && family?.default_amount_ml && !isFood) {
       setAmount(family.default_amount_ml);
     }
   }, [family?.default_amount_ml]);
@@ -68,16 +92,38 @@ export function FeedingForm() {
     setAmount(family?.default_amount_ml ?? 100);
     setTime(roundToNearest15(new Date()));
     setIsEstimate(false);
+    setIsFood(false);
     setVitaminD(false);
     setProbiotics(false);
     setOmega3(false);
     setConfirmDelete(false);
   }
 
+  function toggleFood() {
+    const next = !isFood;
+    setIsFood(next);
+    // Switching unit: start from a sensible number for the new unit, unless editing an existing entry
+    if (!editingFeeding) {
+      setAmount(next ? DEFAULT_FOOD_KCAL : (family?.default_amount_ml ?? 100));
+    }
+  }
+
+  function payload(amountOverride?: number) {
+    return {
+      amount_ml: amountOverride ?? amount,
+      time,
+      is_estimate: isEstimate,
+      is_food: isFood,
+      vitamin_d: vitaminD,
+      probiotics,
+      omega3,
+    };
+  }
+
   async function handleSave() {
     setSaving(true);
     try {
-      await addFeeding({ amount_ml: amount, time, is_estimate: isEstimate, vitamin_d: vitaminD, probiotics, omega3 });
+      await addFeeding(payload());
       resetForm();
     } finally {
       setSaving(false);
@@ -87,7 +133,7 @@ export function FeedingForm() {
   async function handleTimePlaceholder() {
     setSaving(true);
     try {
-      await addFeeding({ amount_ml: 0, time, is_estimate: isEstimate, vitamin_d: vitaminD, probiotics, omega3 });
+      await addFeeding(payload(0));
       resetForm();
     } finally {
       setSaving(false);
@@ -98,7 +144,7 @@ export function FeedingForm() {
     if (!editingFeeding) return;
     setSaving(true);
     try {
-      await updateFeeding(editingFeeding.id, { amount_ml: amount, time, is_estimate: isEstimate, vitamin_d: vitaminD, probiotics, omega3 });
+      await updateFeeding(editingFeeding.id, payload());
       setEditingFeeding(null);
       resetForm();
     } finally {
@@ -110,7 +156,7 @@ export function FeedingForm() {
     if (!editingFeeding) return;
     setSaving(true);
     try {
-      await updateFeeding(editingFeeding.id, { amount_ml: 0, time, is_estimate: isEstimate, vitamin_d: vitaminD, probiotics, omega3 });
+      await updateFeeding(editingFeeding.id, payload(0));
       setEditingFeeding(null);
       resetForm();
     } finally {
@@ -155,6 +201,7 @@ export function FeedingForm() {
     longPressTimer.current = setTimeout(() => {
       longPressTriggered.current = true;
       setModalAmount('');
+      setGrams('');
       setModalDirection(direction);
       setShowAmountModal(true);
     }, 500);
@@ -177,8 +224,24 @@ export function FeedingForm() {
     }
   }, []);
 
+  // Value the modal will apply: computed kcal in food mode, typed ml otherwise
+  const calculatedKcal = Math.round(((parseFloat(kcalPer100g) || 0) / 100) * (parseFloat(grams) || 0));
+  const modalValue = isFood ? calculatedKcal : parseInt(modalAmount);
+
+  function applyModal(mode: 'set' | 'delta') {
+    const val = modalValue;
+    if (!isNaN(val) && val >= 0) {
+      if (mode === 'set') {
+        setAmount(val);
+      } else if (val > 0) {
+        setAmount(prev => Math.max(0, modalDirection === 'reduce' ? prev - val : prev + val));
+      }
+    }
+    setShowAmountModal(false);
+  }
+
   const btnBase = 'w-12 h-12 rounded-md bg-gray-100 dark:bg-dark-border text-2xl font-bold active:bg-gray-200 dark:active:bg-dark-muted/30 select-none';
-  const squareBtn = 'w-14 py-3 rounded-md flex items-center justify-center select-none transition-colors';
+  const modalInput = 'h-12 text-center text-2xl font-bold rounded-md border border-border dark:border-dark-border bg-transparent focus:outline-none focus:ring-1 focus:ring-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none';
 
   return (
     <div className="bg-surface dark:bg-dark-surface rounded-md p-4 space-y-4">
@@ -187,7 +250,10 @@ export function FeedingForm() {
       {editingFeeding && (
         <div className="flex justify-between items-center text-xs">
           <span className="text-muted dark:text-dark-muted">
-            Editing {formatTime(new Date(editingFeeding.time))}{editingFeeding.amount_ml > 0 ? ` · ${editingFeeding.amount_ml} ml` : ' · placeholder'}
+            Editing {formatTime(new Date(editingFeeding.time))}
+            {editingFeeding.amount_ml > 0
+              ? ` · ${editingFeeding.amount_ml} ${editingFeeding.is_food ? 'kcal' : 'ml'}`
+              : ' · placeholder'}
           </span>
           <button onClick={handleCancel} className="text-primary font-medium">Cancel</button>
         </div>
@@ -195,7 +261,7 @@ export function FeedingForm() {
 
       {/* Toggles — same width as +/- rows */}
       <div className="flex items-center justify-between w-[232px] mx-auto">
-        <Toggle active={isEstimate} onToggle={() => setIsEstimate(!isEstimate)} color="yellow"><span>~</span></Toggle>
+        <Toggle active={isFood}     onToggle={toggleFood}                        color="orange"><FoodIcon /></Toggle>
         <Toggle active={vitaminD}   onToggle={() => setVitaminD(!vitaminD)}     color="blue"><span>D</span></Toggle>
         <Toggle active={probiotics} onToggle={() => setProbiotics(!probiotics)} color="purple"><span>P</span></Toggle>
         <Toggle active={omega3}     onToggle={() => setOmega3(!omega3)}         color="teal"><FishIcon /></Toggle>
@@ -209,8 +275,8 @@ export function FeedingForm() {
           onPointerLeave={handlePressLeave}
           className={btnBase}
         >&minus;</button>
-        <span className="text-3xl font-bold w-28 text-center">
-          {amount} <span className="text-lg">ml</span>
+        <span className="text-3xl font-bold w-28 text-center whitespace-nowrap">
+          {amount} <span className="text-lg">{unit}</span>
         </span>
         <button
           onPointerDown={() => handlePressDown('add')}
@@ -270,48 +336,73 @@ export function FeedingForm() {
         </div>
       )}
 
-      {/* Amount modal */}
+      {/* Amount modal — ml entry, or kcal calculator in food mode */}
       {showAmountModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={() => setShowAmountModal(false)}>
           <div className="bg-surface dark:bg-dark-surface rounded-lg p-5 space-y-4" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-center gap-3">
-              <button
-                onClick={() => setModalAmount(prev => String(Math.max(0, (parseInt(prev) || 0) - 5)))}
-                className={btnBase}
-              >&minus;</button>
-              <input
-                type="number"
-                inputMode="numeric"
-                autoFocus
-                value={modalAmount}
-                onChange={e => setModalAmount(e.target.value)}
-                placeholder="ml"
-                className="w-28 h-12 text-center text-3xl font-bold rounded-md border border-border dark:border-dark-border bg-transparent focus:outline-none focus:ring-1 focus:ring-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              />
-              <button
-                onClick={() => setModalAmount(prev => String((parseInt(prev) || 0) + 5))}
-                className={btnBase}
-              >+</button>
-            </div>
+            {isFood ? (
+              <div className="w-[232px] space-y-3">
+                <div className="flex items-center gap-3">
+                  <label className="flex-1">
+                    <span className="block text-xs text-muted dark:text-dark-muted mb-1">kcal / 100 g</span>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      autoFocus={!kcalPer100g}
+                      value={kcalPer100g}
+                      onChange={e => setKcalPer100g(e.target.value)}
+                      placeholder="0"
+                      className={`w-full ${modalInput}`}
+                    />
+                  </label>
+                  <span className="text-xl text-muted dark:text-dark-muted pt-5">×</span>
+                  <label className="flex-1">
+                    <span className="block text-xs text-muted dark:text-dark-muted mb-1">grams</span>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      autoFocus={!!kcalPer100g}
+                      value={grams}
+                      onChange={e => setGrams(e.target.value)}
+                      placeholder="0"
+                      className={`w-full ${modalInput}`}
+                    />
+                  </label>
+                </div>
+                <div className="text-center text-3xl font-bold">
+                  {calculatedKcal} <span className="text-lg">kcal</span>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center gap-3">
+                <button
+                  onClick={() => setModalAmount(prev => String(Math.max(0, (parseInt(prev) || 0) - 5)))}
+                  className={btnBase}
+                >&minus;</button>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  autoFocus
+                  value={modalAmount}
+                  onChange={e => setModalAmount(e.target.value)}
+                  placeholder="ml"
+                  className={`w-28 text-3xl ${modalInput}`}
+                />
+                <button
+                  onClick={() => setModalAmount(prev => String((parseInt(prev) || 0) + 5))}
+                  className={btnBase}
+                >+</button>
+              </div>
+            )}
             <div className="flex gap-3 w-[232px] mx-auto">
               <button
-                onClick={() => {
-                  const val = parseInt(modalAmount);
-                  if (!isNaN(val) && val >= 0) setAmount(val);
-                  setShowAmountModal(false);
-                }}
+                onClick={() => applyModal('set')}
                 className="flex-1 h-12 rounded-md bg-gray-200 dark:bg-dark-border font-semibold text-lg"
               >
                 Set
               </button>
               <button
-                onClick={() => {
-                  const val = parseInt(modalAmount);
-                  if (!isNaN(val) && val > 0) {
-                    setAmount(prev => Math.max(0, modalDirection === 'reduce' ? prev - val : prev + val));
-                  }
-                  setShowAmountModal(false);
-                }}
+                onClick={() => applyModal('delta')}
                 className="flex-1 h-12 rounded-md bg-primary text-white font-semibold text-lg"
               >
                 {modalDirection === 'reduce' ? 'Reduce' : 'Add'}
@@ -337,7 +428,7 @@ function FishIcon() {
 const TOGGLE_COLORS = {
   blue:   { on: 'bg-blue-300   dark:bg-blue-700/60   text-blue-900   dark:text-blue-100',   off: 'bg-blue-100   dark:bg-blue-900/40   text-blue-700   dark:text-blue-300' },
   purple: { on: 'bg-purple-300 dark:bg-purple-700/60 text-purple-900 dark:text-purple-100', off: 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300' },
-  yellow: { on: 'bg-yellow-300 dark:bg-yellow-700/60 text-yellow-900 dark:text-yellow-100', off: 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300' },
+  orange: { on: 'bg-orange-300 dark:bg-orange-700/60 text-orange-900 dark:text-orange-100', off: 'bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300' },
   teal:   { on: 'bg-teal-300   dark:bg-teal-700/60   text-teal-900   dark:text-teal-100',   off: 'bg-teal-100   dark:bg-teal-900/40   text-teal-700   dark:text-teal-300' },
 };
 

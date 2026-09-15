@@ -3,7 +3,9 @@
 import { Fragment } from 'react';
 import { useApp } from '@/lib/context';
 import { formatTime, getDayStart } from '@/lib/utils';
+import { formulaMl } from '@/lib/nutrition';
 import { Feeding } from '@/lib/types';
+import { FoodIcon } from './FeedingForm';
 
 function PencilIcon() {
   return (
@@ -16,7 +18,7 @@ function PencilIcon() {
 
 function DaySection({ label, feedings, timeMarker }: { label: string; feedings: Feeding[]; timeMarker?: Date }) {
   const { editingFeeding, setEditingFeeding } = useApp();
-  const totalMl = feedings.reduce((s, f) => s + f.amount_ml, 0);
+  const totalMl = feedings.reduce((s, f) => s + formulaMl(f), 0);
   const markerTime = timeMarker ? timeMarker.getTime() : null;
 
   return (
@@ -65,8 +67,9 @@ function DaySection({ label, feedings, timeMarker }: { label: string; feedings: 
                     {f.probiotics  && <span className="text-xs bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 px-1 rounded">P</span>}
                     {f.omega3      && <span className="text-xs bg-teal-100   dark:bg-teal-900/40   text-teal-700   dark:text-teal-300   px-1 rounded">O</span>}
                     {f.is_estimate && <span className="text-xs bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300 px-1 rounded">~</span>}
+                    {f.is_food      && <span className="text-xs bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 px-1 rounded"><FoodIcon size={12} /></span>}
                     <span className={`text-sm font-semibold w-16 text-right ${isPlaceholder && !isEditing ? 'text-yellow-600 dark:text-yellow-400' : ''}`}>
-                      {isPlaceholder ? '— ml' : `${f.amount_ml} ml`}
+                      {isPlaceholder ? `— ${f.is_food ? 'kcal' : 'ml'}` : `${f.amount_ml} ${f.is_food ? 'kcal' : 'ml'}`}
                     </span>
                     <span
                       onClick={!isPlaceholder ? () => setEditingFeeding(isEditing ? null : f) : undefined}

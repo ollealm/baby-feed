@@ -13,9 +13,11 @@ export interface Family {
 export interface Feeding {
   id: string;
   family_id: string;
+  /** ml of formula, or kcal when is_food is true */
   amount_ml: number;
   time: string;
   is_estimate: boolean;
+  is_food: boolean;
   vitamin_d: boolean;
   probiotics: boolean;
   omega3: boolean;
@@ -24,9 +26,11 @@ export interface Feeding {
 }
 
 export interface NewFeeding {
+  /** ml of formula, or kcal when is_food is true */
   amount_ml: number;
   time: Date;
   is_estimate: boolean;
+  is_food: boolean;
   vitamin_d: boolean;
   probiotics: boolean;
   omega3: boolean;

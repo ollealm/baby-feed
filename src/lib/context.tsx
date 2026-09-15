@@ -11,6 +11,7 @@ interface FeedingUpdate {
   amount_ml: number;
   time: Date;
   is_estimate: boolean;
+  is_food: boolean;
   vitamin_d: boolean;
   probiotics: boolean;
   omega3: boolean;
@@ -185,6 +186,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         amount_ml: data.amount_ml,
         time: data.time.toISOString(),
         is_estimate: data.is_estimate,
+        is_food: data.is_food,
         vitamin_d: data.vitamin_d,
         probiotics: data.probiotics,
         omega3: data.omega3,
@@ -206,6 +208,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         amount_ml: data.amount_ml,
         time: data.time.toISOString(),
         is_estimate: data.is_estimate,
+        is_food: data.is_food,
         vitamin_d: data.vitamin_d,
         probiotics: data.probiotics,
         omega3: data.omega3,
@@ -230,7 +233,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       family_id: family.id,
       amount_ml: e.amount_ml,
       time: e.time.toISOString(),
-      is_estimate: false, vitamin_d: false, probiotics: false, omega3: false,
+      is_estimate: false, is_food: false, vitamin_d: false, probiotics: false, omega3: false,
       formula: family.current_formula || DEFAULT_FORMULA,
     }));
     const { data } = await supabase.from('feedings').insert(rows).select();

@@ -42,13 +42,16 @@ export function FeedingRhythm({ feedings, dayBreakHour, patterns = [], days = 30
         dayIndex,
         minute: time.getHours() * 60 + time.getMinutes(),
         amount: f.amount_ml,
+        isFood: f.is_food,
       };
     })
     .filter((d) => d.dayIndex >= 0 && d.dayIndex < days);
 
   if (dots.length === 0) return null;
 
-  const maxAmount = Math.max(...dots.map((d) => d.amount), 1);
+  // Separate size scales: formula dots by ml, food dots by kcal
+  const maxMl = Math.max(...dots.filter((d) => !d.isFood).map((d) => d.amount), 1);
+  const maxKcal = Math.max(...dots.filter((d) => d.isFood).map((d) => d.amount), 1);
   // Classic actogram: each row is a day, oldest at the top, time left to right.
   const toX = (minute: number) => PAD_LEFT + timeFraction(minute, dayBreakHour) * PLOT_W;
   const toY = (dayIndex: number) => PAD_TOP + ((dayIndex + 0.5) / days) * PLOT_H;
@@ -119,8 +122,8 @@ export function FeedingRhythm({ feedings, dayBreakHour, patterns = [], days = 30
           key={i}
           cx={toX(dot.minute)}
           cy={toY(dot.dayIndex)}
-          r={1.4 + (dot.amount / maxAmount) * 2.4}
-          className="fill-primary dark:fill-blue-500"
+          r={1.4 + (dot.amount / (dot.isFood ? maxKcal : maxMl)) * 2.4}
+          className={dot.isFood ? 'fill-orange-500' : 'fill-primary dark:fill-blue-500'}
           opacity="0.75"
         />
       ))}

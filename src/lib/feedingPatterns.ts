@@ -11,7 +11,7 @@ const DEFAULT_MAX_PATTERNS = 12;
 
 interface PatternPoint {
   minute: number;
-  amount_ml: number;
+  amount: number;
   dayKey: string;
   weight: number;
 }
@@ -23,7 +23,8 @@ export interface FeedingPattern {
   feedCount: number;
   daysSeen: number;
   loggedDays: number;
-  avgAmountMl: number;
+  /** Weighted average amount in the unit of `amountOf` (ml by default). */
+  avgAmount: number;
   shareOfLoggedDays: number;
   spreadMinutes: number;
 }
@@ -48,6 +49,8 @@ interface AnalyzeOptions {
   kernelSdMinutes?: number;
   prominenceFraction?: number;
   maxPatterns?: number;
+  /** Amount used for averages and the amount-weighted density. Defaults to amount_ml. */
+  amountOf?: (feeding: Feeding) => number;
 }
 
 function normalizeMinute(minute: number): number {
@@ -272,6 +275,7 @@ export function analyzeFeedingPatterns(
   const kernelSdMinutes = options.kernelSdMinutes ?? DEFAULT_KERNEL_SD_MINUTES;
   const prominenceFraction = options.prominenceFraction ?? DEFAULT_PROMINENCE_FRACTION;
   const maxPatterns = options.maxPatterns ?? DEFAULT_MAX_PATTERNS;
+  const amountOf = options.amountOf ?? ((feeding: Feeding) => feeding.amount_ml);
   const rangeStart = new Date(now.getTime() - lookbackDays * 24 * 60 * 60 * 1000);
 
   const recentFeedings = feedings.filter((feeding) => {
@@ -285,7 +289,7 @@ export function analyzeFeedingPatterns(
     const time = new Date(feeding.time);
     return {
       minute: minuteOfDay(time),
-      amount_ml: feeding.amount_ml,
+      amount: amountOf(feeding),
       dayKey: localDayKey(getDayStart(time, dayBreakHour)),
       weight: recencyWeight(time, now, halfLifeDays),
     };
@@ -307,7 +311,7 @@ export function analyzeFeedingPatterns(
   // Same curve but weighted by recency x amount, so it shows where the milk
   // goes rather than when feeds happen. Visualization only — peak detection
   // stays occurrence-based.
-  const amountPoints = points.map((point) => ({ ...point, weight: point.weight * point.amount_ml }));
+  const amountPoints = points.map((point) => ({ ...point, weight: point.weight * point.amount }));
   const normalizedAmountDensity = normalize(estimateDensity(amountPoints, gridMinutes, kernelSdMinutes));
   const { peakIndices, valleyIndices } = watershedPeaks(density, prominenceFraction, maxPatterns);
 
@@ -341,7 +345,7 @@ export function analyzeFeedingPatterns(
       const spreadMinutes = rangeEndMinute - rangeStartMinute;
 
       const clusterWeight = cluster.reduce((sum, point) => sum + point.weight, 0);
-      const weightedAmount = cluster.reduce((sum, point) => sum + point.weight * point.amount_ml, 0);
+      const weightedAmount = cluster.reduce((sum, point) => sum + point.weight * point.amount, 0);
       const seenDayWeight = Array.from(new Set(cluster.map((point) => point.dayKey))).reduce(
         (sum, dayKey) => sum + (dayWeights.get(dayKey) ?? 0),
         0
@@ -354,7 +358,7 @@ export function analyzeFeedingPatterns(
         feedCount: cluster.length,
         daysSeen,
         loggedDays,
-        avgAmountMl: Math.round(weightedAmount / clusterWeight),
+        avgAmount: Math.round(weightedAmount / clusterWeight),
         shareOfLoggedDays: totalDayWeight > 0 ? seenDayWeight / totalDayWeight : 0,
         spreadMinutes: Math.round(spreadMinutes),
       };

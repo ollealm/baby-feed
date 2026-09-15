@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useApp } from '@/lib/context';
+import { Feeding } from '@/lib/types';
+import { feedingKcal } from '@/lib/nutrition';
 import {
   FeedingPattern,
   FeedingPatternAnalysis,
@@ -11,6 +13,14 @@ import {
 
 const DAY_MINUTES = 24 * 60;
 const STRIP_HEIGHT = 64;
+
+type Mode = 'all' | 'formula' | 'food';
+
+const MODES: { key: Mode; label: string; unit: string; filter: (f: Feeding) => boolean; amountOf: (f: Feeding) => number; lineClass: string }[] = [
+  { key: 'all',     label: 'All',     unit: 'kcal', filter: () => true,        amountOf: feedingKcal,       lineClass: 'stroke-primary dark:stroke-blue-500' },
+  { key: 'formula', label: 'Formula', unit: 'ml',   filter: (f) => !f.is_food, amountOf: (f) => f.amount_ml, lineClass: 'stroke-primary dark:stroke-blue-500' },
+  { key: 'food',    label: 'Food',    unit: 'kcal', filter: (f) => f.is_food,  amountOf: (f) => f.amount_ml, lineClass: 'stroke-orange-500' },
+];
 
 function frequencyLabel(share: number): string {
   if (share >= 0.67) return 'Strong';
@@ -31,10 +41,12 @@ function DensityStrip({
   analysis,
   dayBreakHour,
   nowMinute,
+  lineClass,
 }: {
   analysis: FeedingPatternAnalysis;
   dayBreakHour: number;
   nowMinute: number;
+  lineClass: string;
 }) {
   const { density, amountDensity, gridMinutes, patterns } = analysis;
   if (density.length === 0) return null;
@@ -71,7 +83,7 @@ function DensityStrip({
             <path
               d={amountPath}
               fill="none"
-              className="stroke-primary dark:stroke-blue-500"
+              className={lineClass}
               strokeWidth="1.5"
               strokeLinejoin="round"
               vectorEffect="non-scaling-stroke"
@@ -105,6 +117,7 @@ function DensityStrip({
 export function FeedingPatterns() {
   const { feedings, family } = useApp();
   const [analysisNow, setAnalysisNow] = useState(() => new Date());
+  const [modeKey, setModeKey] = useState<Mode>('all');
 
   useEffect(() => {
     function handleVisibility() {
@@ -116,69 +129,99 @@ export function FeedingPatterns() {
 
   if (!family || feedings.length === 0) return null;
 
-  const analysis = analyzeFeedingPatterns(feedings, family.day_break_hour, { now: analysisNow });
-  if (analysis.recentFeedCount < 4) return null;
+  const mode = MODES.find((m) => m.key === modeKey)!;
+  const analysis = analyzeFeedingPatterns(feedings.filter(mode.filter), family.day_break_hour, {
+    now: analysisNow,
+    amountOf: mode.amountOf,
+  });
 
   const { patterns, recentFeedCount, coveredFeedCount } = analysis;
-  const coveragePct = Math.round((coveredFeedCount / recentFeedCount) * 100);
+  const coveragePct = recentFeedCount > 0 ? Math.round((coveredFeedCount / recentFeedCount) * 100) : 0;
 
   return (
     <div className="mt-8">
-      <h3 className="text-xs font-semibold text-muted dark:text-dark-muted uppercase tracking-wide">
-        Patterns
-        <span className="ml-1 font-normal normal-case">(last 3 weeks, recent days weigh more)</span>
-      </h3>
+      <div className="flex items-end justify-between">
+        <h3 className="text-xs font-semibold text-muted dark:text-dark-muted uppercase tracking-wide">
+          Patterns
+          <span className="ml-1 font-normal normal-case">(last 3 weeks, recent days weigh more)</span>
+        </h3>
+      </div>
+
+      <div className="mt-2 flex gap-1">
+        {MODES.map((m) => (
+          <button
+            key={m.key}
+            onClick={() => setModeKey(m.key)}
+            className={`px-3 py-1 rounded-md text-xs font-medium select-none transition-colors ${
+              m.key === modeKey
+                ? 'bg-primary text-white'
+                : 'bg-surface dark:bg-dark-surface text-muted dark:text-dark-muted'
+            }`}
+          >
+            {m.label}
+          </button>
+        ))}
+      </div>
 
       <div className="mt-2 bg-surface dark:bg-dark-surface rounded-md overflow-hidden">
-        <DensityStrip
-          analysis={analysis}
-          dayBreakHour={family.day_break_hour}
-          nowMinute={analysisNow.getHours() * 60 + analysisNow.getMinutes()}
-        />
-        {patterns.length === 0 ? (
+        {recentFeedCount < 4 ? (
           <p className="text-sm text-muted dark:text-dark-muted py-2 px-2">
-            No repeated time points yet
+            Not enough {mode.key === 'all' ? '' : mode.label.toLowerCase() + ' '}entries yet
           </p>
         ) : (
           <>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-xs text-muted dark:text-dark-muted">
-                  <th className="text-left font-normal py-1.5 px-2">Time</th>
-                  <th className="text-left font-normal py-1.5 px-2">Range</th>
-                  <th className="text-right font-normal py-1.5 px-2">Days</th>
-                  <th className="text-right font-normal py-1.5 px-2">Avg</th>
-                  <th className="text-right font-normal py-1.5 px-2">Signal</th>
-                </tr>
-              </thead>
-              <tbody>
-                {patterns.map((pattern) => (
-                  <tr
-                    key={`${pattern.centerMinute}-${pattern.feedCount}`}
-                    className="border-t border-border dark:border-dark-border"
-                  >
-                    <td className="py-1.5 px-2 font-semibold">
-                      {formatPatternMinute(pattern.centerMinute)}
-                    </td>
-                    <td className="py-1.5 px-2 text-muted dark:text-dark-muted">
-                      {rangeLabel(pattern)}
-                    </td>
-                    <td className="py-1.5 px-2 text-right">
-                      {pattern.daysSeen}/{pattern.loggedDays}
-                    </td>
-                    <td className="py-1.5 px-2 text-right font-semibold">
-                      {pattern.avgAmountMl} ml
-                    </td>
-                    <td className="py-1.5 px-2 text-right text-muted dark:text-dark-muted">
-                      {frequencyLabel(pattern.shareOfLoggedDays)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <p className="border-t border-border dark:border-dark-border py-1.5 px-2 text-xs text-muted dark:text-dark-muted">
-              Patterns cover {coveredFeedCount} of {recentFeedCount} feeds ({coveragePct}%)
-            </p>
+            <DensityStrip
+              analysis={analysis}
+              dayBreakHour={family.day_break_hour}
+              nowMinute={analysisNow.getHours() * 60 + analysisNow.getMinutes()}
+              lineClass={mode.lineClass}
+            />
+            {patterns.length === 0 ? (
+              <p className="text-sm text-muted dark:text-dark-muted py-2 px-2">
+                No repeated time points yet
+              </p>
+            ) : (
+              <>
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-xs text-muted dark:text-dark-muted">
+                      <th className="text-left font-normal py-1.5 px-2">Time</th>
+                      <th className="text-left font-normal py-1.5 px-2">Range</th>
+                      <th className="text-right font-normal py-1.5 px-2">Days</th>
+                      <th className="text-right font-normal py-1.5 px-2">Avg</th>
+                      <th className="text-right font-normal py-1.5 px-2">Signal</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {patterns.map((pattern) => (
+                      <tr
+                        key={`${pattern.centerMinute}-${pattern.feedCount}`}
+                        className="border-t border-border dark:border-dark-border"
+                      >
+                        <td className="py-1.5 px-2 font-semibold">
+                          {formatPatternMinute(pattern.centerMinute)}
+                        </td>
+                        <td className="py-1.5 px-2 text-muted dark:text-dark-muted">
+                          {rangeLabel(pattern)}
+                        </td>
+                        <td className="py-1.5 px-2 text-right">
+                          {pattern.daysSeen}/{pattern.loggedDays}
+                        </td>
+                        <td className="py-1.5 px-2 text-right font-semibold whitespace-nowrap">
+                          {pattern.avgAmount} {mode.unit}
+                        </td>
+                        <td className="py-1.5 px-2 text-right text-muted dark:text-dark-muted">
+                          {frequencyLabel(pattern.shareOfLoggedDays)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <p className="border-t border-border dark:border-dark-border py-1.5 px-2 text-xs text-muted dark:text-dark-muted">
+                  Patterns cover {coveredFeedCount} of {recentFeedCount} feeds ({coveragePct}%)
+                </p>
+              </>
+            )}
           </>
         )}
       </div>

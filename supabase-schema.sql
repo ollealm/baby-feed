@@ -21,6 +21,8 @@ create table feedings (
   amount_ml integer not null,
   time timestamptz not null,
   is_estimate boolean not null default false,
+  -- real food (not formula): amount_ml then holds kcal instead of ml
+  is_food boolean not null default false,
   vitamin_d boolean not null default false,
   probiotics boolean not null default false,
   omega3 boolean not null default false,
@@ -49,3 +51,5 @@ alter publication supabase_realtime add table feedings;
 -- alter table families add column if not exists feeding_span_minutes integer not null default 60;
 -- Migration: add omega3 (run if table already exists)
 -- alter table feedings add column if not exists omega3 boolean not null default false;
+-- Migration: add is_food (run if table already exists)
+-- alter table feedings add column if not exists is_food boolean not null default false;
