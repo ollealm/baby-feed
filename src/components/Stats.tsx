@@ -2,7 +2,7 @@
 
 import { useApp } from '@/lib/context';
 import { formatDuration, getDayStart } from '@/lib/utils';
-import { feedingKcal, formulaMl } from '@/lib/nutrition';
+import { feedingKcal, formulaMl, getKcalPer100ml } from '@/lib/nutrition';
 import { Feeding } from '@/lib/types';
 
 const HOUR = 60 * 60 * 1000;
@@ -92,6 +92,9 @@ export function Stats() {
   const nextKcal = windows.map(d => calcNextHour(d, feedingKcal));
   const nextMl = windows.map(d => calcNextHour(d, formulaMl));
 
+  // kcal expressed as ml of the current formula, so the kcal delta reads as "one more/less bottle of X ml"
+  const kcalToMl = (kcal: number) => Math.round(kcal * 100 / getKcalPer100ml(family!.current_formula));
+
   function deltaCell(today: number, usual: number, unit: string) {
     const delta = today - usual;
     const cls = delta < 0 ? 'text-amber-600 dark:text-amber-500' : 'text-emerald-600 dark:text-emerald-500';
@@ -119,6 +122,7 @@ export function Stats() {
           <tbody>
             <Row label={`At this time (${todayKcal} kcal)`} values={triple(atKcal, 'kcal')} />
             <Row label="Delta" values={atKcal.map(v => deltaCell(todayKcal, v, 'kcal')) as Cells} />
+            <Row label="Delta as formula" values={atKcal.map(v => deltaCell(kcalToMl(todayKcal), kcalToMl(v), 'ml')) as Cells} />
             <Row label="Next hour (total)" values={triple(nextKcal, 'kcal')} />
             <Row label="Next hour (formula)" values={triple(nextMl, 'ml')} />
 
