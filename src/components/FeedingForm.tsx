@@ -3,8 +3,7 @@
 import { useState, useEffect, useRef, useCallback, ReactNode } from 'react';
 import { useApp } from '@/lib/context';
 import { roundToNearest15, formatTime } from '@/lib/utils';
-
-const DEFAULT_FOOD_KCAL = 50;
+import { getKcalPer100ml } from '@/lib/nutrition';
 
 function ClockIcon() {
   return (
@@ -102,10 +101,12 @@ export function FeedingForm() {
   function toggleFood() {
     const next = !isFood;
     setIsFood(next);
-    // Switching unit: start from a sensible number for the new unit, unless editing an existing entry
-    if (!editingFeeding) {
-      setAmount(next ? DEFAULT_FOOD_KCAL : (family?.default_amount_ml ?? 100));
-    }
+    // Convert the current value between ml and kcal with the current formula, in 5-unit steps
+    const kcalPer100ml = getKcalPer100ml(family?.current_formula ?? '');
+    setAmount(prev => {
+      const converted = next ? prev * kcalPer100ml / 100 : prev * 100 / kcalPer100ml;
+      return Math.max(0, Math.round(converted / 5) * 5);
+    });
   }
 
   function payload(amountOverride?: number) {
