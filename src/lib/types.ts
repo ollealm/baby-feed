@@ -35,3 +35,20 @@ export interface NewFeeding {
   probiotics: boolean;
   omega3: boolean;
 }
+
+export type SleepKind = 'sleep' | 'wake';
+
+export interface SleepEvent {
+  id: string;
+  family_id: string;
+  kind: SleepKind;
+  time: string;
+  is_estimate: boolean;
+  created_at: string;
+}
+
+export interface NewSleepEvent {
+  kind: SleepKind;
+  time: Date;
+  is_estimate: boolean;
+}

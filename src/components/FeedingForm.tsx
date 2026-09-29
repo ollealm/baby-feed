@@ -14,7 +14,7 @@ function ClockIcon() {
   );
 }
 
-function TrashIcon() {
+export function TrashIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="3 6 5 6 21 6" />
@@ -431,12 +431,15 @@ const TOGGLE_COLORS = {
   purple: { on: 'bg-purple-300 dark:bg-purple-700/60 text-purple-900 dark:text-purple-100', off: 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300' },
   orange: { on: 'bg-orange-300 dark:bg-orange-700/60 text-orange-900 dark:text-orange-100', off: 'bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300' },
   teal:   { on: 'bg-teal-300   dark:bg-teal-700/60   text-teal-900   dark:text-teal-100',   off: 'bg-teal-100   dark:bg-teal-900/40   text-teal-700   dark:text-teal-300' },
+  yellow: { on: 'bg-yellow-300 dark:bg-yellow-700/60 text-yellow-900 dark:text-yellow-100', off: 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300' },
 };
 
-function Toggle({ active, onToggle, color, children }: { active: boolean; onToggle: () => void; color: keyof typeof TOGGLE_COLORS; children: ReactNode }) {
+export function Toggle({ active, onToggle, color, label, children }: { active: boolean; onToggle: () => void; color: keyof typeof TOGGLE_COLORS; label?: string; children: ReactNode }) {
   return (
     <button
       onClick={onToggle}
+      aria-label={label}
+      aria-pressed={active}
       className={`w-12 h-12 rounded-md flex items-center justify-center text-xl font-bold select-none transition-colors ${
         active ? TOGGLE_COLORS[color].on : TOGGLE_COLORS[color].off
       }`}

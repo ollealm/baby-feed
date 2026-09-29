@@ -7,12 +7,16 @@ export function generateCode(): string {
   return code;
 }
 
-export function roundToNearest15(date: Date): Date {
+export function roundToNearest(date: Date, step: number): Date {
   const d = new Date(date);
   const minutes = d.getMinutes();
-  const rounded = Math.round(minutes / 15) * 15;
+  const rounded = Math.round(minutes / step) * step;
   d.setMinutes(rounded, 0, 0);
   return d;
+}
+
+export function roundToNearest15(date: Date): Date {
+  return roundToNearest(date, 15);
 }
 
 export function formatTime(date: Date): string {
@@ -34,6 +38,14 @@ export function getDayStart(date: Date, dayBreakHour: number): Date {
   }
   d.setHours(dayBreakHour, 0, 0, 0);
   return d;
+}
+
+/** YYYY-MM-DD in local time (toISOString would give the UTC date). */
+export function localDateKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 export interface ParsedFeeding {

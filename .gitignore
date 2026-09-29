@@ -44,3 +44,6 @@ next-env.d.ts
 # local tooling
 /.claude/
 /.playwright-mcp/
+
+# local data backups
+/backups
