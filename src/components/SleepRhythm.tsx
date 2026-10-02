@@ -45,7 +45,7 @@ export function SleepRhythm({ sessions, rows, dayBreakHour }: SleepRhythmProps) 
             height={barH}
             rx={Math.min(barH / 2, 1.5)}
             className={s.night ? 'fill-primary dark:fill-blue-500' : 'fill-amber-400'}
-            opacity={s.estimate ? 0.4 : 0.8}
+            opacity="0.8"
           />
         );
       });

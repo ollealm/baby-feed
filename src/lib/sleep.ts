@@ -14,6 +14,10 @@ const NIGHT_SEED_AFTER = 4 * HOUR;
 const NIGHT_MIN_SEED = 90 * MIN;
 /** Sleeps starting earlier than this before the day break are never part of the night (evening naps). */
 const NIGHT_EARLIEST_START = 12 * HOUR;
+/** A feeding at least this far inside a night sleep counts as a night waking; nearer the edges it's part of falling asleep / waking up. */
+const FEED_EDGE_MARGIN = 15 * MIN;
+/** Feedings closer together than this are the same waking. */
+const FEED_WAKING_MERGE = 30 * MIN;
 /** Days back used for "usual" values in the live timer. */
 const TYPICAL_DAYS = 7;
 
@@ -153,6 +157,17 @@ function findNight(sessions: SleepSession[], dayBreak: number): { first: number;
   return { first, last };
 }
 
+/**
+ * Feedings during the sleeps of a night, one per waking. These are wakings even
+ * when no wake/sleep was logged (he ate and went straight back to sleep).
+ */
+function nightFeeds(chain: SleepSession[], feedTimes: number[]): number[][] {
+  return chain.map(s => {
+    const inside = feedTimes.filter(t => t > s.start + FEED_EDGE_MARGIN && t < s.end - FEED_EDGE_MARGIN);
+    return inside.filter((t, i) => i === 0 || t - inside[i - 1] >= FEED_WAKING_MERGE);
+  });
+}
+
 const mean = (values: number[]) => values.length ? values.reduce((a, b) => a + b, 0) / values.length : null;
 
 // "Usual" values for the live timer use the median, so one badly logged day doesn't skew them
@@ -168,8 +183,11 @@ export function analyzeSleep(
   excludedDays: Set<string>,
   dayBreakHour: number,
   nowDate: Date,
+  /** Feeding times (ms); feeds during the night count as night wakings */
+  feedingTimes: number[] = [],
 ): SleepAnalysis {
   const now = nowDate.getTime();
+  const feedTimes = [...feedingTimes].sort((a, b) => a - b);
   const { sessions, sessionOfWake, eventInfo } = pairSessions(events, now);
 
   const todayStart = getDayStart(nowDate, dayBreakHour);
@@ -218,6 +236,14 @@ export function analyzeSleep(
 
     const nightDone = after && after.complete;
     const nightMs = nightDone ? after.chain.reduce((sum, s) => sum + (s.end - s.start), 0) : null;
+    // Logged wakings are the gaps between the night's sleeps; feeds inside a sleep are wakings too and split its stretch
+    const feeds = nightDone ? nightFeeds(after.chain, feedTimes) : [];
+    const stretches = nightDone
+      ? after.chain.flatMap((s, j) => {
+          const points = [s.start, ...feeds[j], s.end];
+          return points.slice(1).map((t, k) => t - points[k]);
+        })
+      : [];
     const napMs = excluded || !tracked ? null : naps.reduce((sum, s) => sum + (s.end - s.start), 0);
 
     const awakeWindows: number[] = [];
@@ -240,8 +266,8 @@ export function analyzeSleep(
       napMs,
       napCount: napMs === null ? null : naps.length,
       nightMs,
-      nightWakings: nightDone ? after.chain.length - 1 : null,
-      longestStretch: nightDone ? Math.max(...after.chain.map(s => s.end - s.start)) : null,
+      nightWakings: nightDone ? after.chain.length - 1 + feeds.reduce((n, f) => n + f.length, 0) : null,
+      longestStretch: nightDone ? Math.max(...stretches) : null,
       totalMs: napMs !== null && nightMs !== null ? napMs + nightMs : null,
       awakeWindows,
     });

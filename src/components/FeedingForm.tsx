@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback, ReactNode } from 'react';
 import { useApp } from '@/lib/context';
 import { roundToNearest15, formatTime } from '@/lib/utils';
 import { getKcalPer100ml } from '@/lib/nutrition';
+import { TimeSetModal, useLongPress } from './TimeSetModal';
 
 function ClockIcon() {
   return (
@@ -51,6 +52,8 @@ export function FeedingForm() {
   const [saving, setSaving]             = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showAmountModal, setShowAmountModal] = useState(false);
+  const [showTimeModal, setShowTimeModal] = useState(false);
+  const timeLongPress = useLongPress(() => setShowTimeModal(true));
   const [modalAmount, setModalAmount]   = useState('');
   const [modalDirection, setModalDirection] = useState<'reduce' | 'add'>('reduce');
   // kcal calculator (food mode) — kcal/100g is kept between opens since the same jar is often logged repeatedly
@@ -290,7 +293,10 @@ export function FeedingForm() {
       {/* Time */}
       <div className="flex items-center justify-center gap-3">
         <button onClick={() => adjustTime(-15)} className={btnBase}>&minus;</button>
-        <span className="text-3xl font-bold w-28 text-center">{formatTime(time)}</span>
+        <span
+          {...timeLongPress}
+          className="text-3xl font-bold w-28 text-center select-none cursor-pointer [-webkit-touch-callout:none]"
+        >{formatTime(time)}</span>
         <button onClick={() => adjustTime(15)} className={btnBase}>+</button>
       </div>
 
@@ -335,6 +341,10 @@ export function FeedingForm() {
             <ClockIcon />
           </button>
         </div>
+      )}
+
+      {showTimeModal && (
+        <TimeSetModal value={time} onSet={setTime} onClose={() => setShowTimeModal(false)} />
       )}
 
       {/* Amount modal — ml entry, or kcal calculator in food mode */}
@@ -395,19 +405,22 @@ export function FeedingForm() {
                 >+</button>
               </div>
             )}
+            {/* Food: the calculated kcal is the meal, so only Set */}
             <div className="flex gap-3 w-[232px] mx-auto">
               <button
                 onClick={() => applyModal('set')}
-                className="flex-1 h-12 rounded-md bg-gray-200 dark:bg-dark-border font-semibold text-lg"
+                className={`flex-1 h-12 rounded-md font-semibold text-lg ${isFood ? 'bg-primary text-white' : 'bg-gray-200 dark:bg-dark-border'}`}
               >
                 Set
               </button>
-              <button
-                onClick={() => applyModal('delta')}
-                className="flex-1 h-12 rounded-md bg-primary text-white font-semibold text-lg"
-              >
-                {modalDirection === 'reduce' ? 'Reduce' : 'Add'}
-              </button>
+              {!isFood && (
+                <button
+                  onClick={() => applyModal('delta')}
+                  className="flex-1 h-12 rounded-md bg-primary text-white font-semibold text-lg"
+                >
+                  {modalDirection === 'reduce' ? 'Reduce' : 'Add'}
+                </button>
+              )}
             </div>
           </div>
         </div>

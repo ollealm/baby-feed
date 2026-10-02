@@ -20,7 +20,7 @@ export default function SleepPage() {
 }
 
 function SleepView() {
-  const { family } = useApp();
+  const { family, feedings } = useApp();
   const { sleepEvents, excludedDays } = useSleep();
   const [now, setNow] = useState(() => new Date());
 
@@ -37,9 +37,10 @@ function SleepView() {
   }, []);
 
   const dayBreakHour = family?.day_break_hour ?? 5;
+  const feedingTimes = useMemo(() => feedings.map(f => new Date(f.time).getTime()), [feedings]);
   const analysis = useMemo(
-    () => analyzeSleep(sleepEvents, excludedDays, dayBreakHour, now),
-    [sleepEvents, excludedDays, dayBreakHour, now],
+    () => analyzeSleep(sleepEvents, excludedDays, dayBreakHour, now, feedingTimes),
+    [sleepEvents, excludedDays, dayBreakHour, now, feedingTimes],
   );
 
   if (!family) return null;

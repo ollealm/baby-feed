@@ -5,6 +5,7 @@ import { useSleep } from '@/lib/sleepContext';
 import { roundToNearest, formatTime } from '@/lib/utils';
 import { SleepKind } from '@/lib/types';
 import { Toggle, TrashIcon } from './FeedingForm';
+import { TimeSetModal, useLongPress } from './TimeSetModal';
 
 const TIME_STEP = 5;
 
@@ -32,6 +33,8 @@ export function SleepForm() {
   const [isEstimate, setIsEstimate]       = useState(false);
   const [saving, setSaving]               = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showTimeModal, setShowTimeModal] = useState(false);
+  const timeLongPress = useLongPress(() => setShowTimeModal(true));
 
   // The next expected event gets the primary button
   const asleep = sleepEvents[0]?.kind === 'sleep';
@@ -157,7 +160,10 @@ export function SleepForm() {
           onPointerLeave={stopRepeat}
           className={btnBase}
         >&minus;</button>
-        <span className="text-3xl font-bold w-28 text-center">{formatTime(time)}</span>
+        <span
+          {...timeLongPress}
+          className="text-3xl font-bold w-28 text-center select-none cursor-pointer [-webkit-touch-callout:none]"
+        >{formatTime(time)}</span>
         <button
           onPointerDown={() => startRepeat(TIME_STEP)}
           onPointerUp={stopRepeat}
@@ -198,6 +204,10 @@ export function SleepForm() {
             <WakeIcon /> Wake
           </button>
         </div>
+      )}
+
+      {showTimeModal && (
+        <TimeSetModal value={time} onSet={setTime} onClose={() => setShowTimeModal(false)} />
       )}
     </div>
   );
