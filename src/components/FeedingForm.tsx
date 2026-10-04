@@ -185,8 +185,11 @@ export function FeedingForm() {
     resetForm();
   }
 
+  // Step to the next multiple of 5 in that direction, so 97 kcal goes to 100 / 95
   function adjustAmount(delta: number) {
-    setAmount(prev => Math.max(0, prev + delta));
+    setAmount(prev => Math.max(0, delta > 0
+      ? Math.floor(prev / 5) * 5 + 5
+      : Math.ceil(prev / 5) * 5 - 5));
   }
 
   function adjustTime(deltaMinutes: number) {
@@ -355,26 +358,26 @@ export function FeedingForm() {
               <div className="w-[232px] space-y-3">
                 <div className="flex items-center gap-3">
                   <label className="flex-1">
-                    <span className="block text-xs text-muted dark:text-dark-muted mb-1">kcal / 100 g</span>
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      autoFocus={!kcalPer100g}
-                      value={kcalPer100g}
-                      onChange={e => setKcalPer100g(e.target.value)}
-                      placeholder="0"
-                      className={`w-full ${modalInput}`}
-                    />
-                  </label>
-                  <span className="text-xl text-muted dark:text-dark-muted pt-5">×</span>
-                  <label className="flex-1">
-                    <span className="block text-xs text-muted dark:text-dark-muted mb-1">grams</span>
+                    <span className="block text-center text-xs text-muted dark:text-dark-muted mb-1">grams</span>
                     <input
                       type="number"
                       inputMode="decimal"
                       autoFocus={!!kcalPer100g}
                       value={grams}
                       onChange={e => setGrams(e.target.value)}
+                      placeholder="0"
+                      className={`w-full ${modalInput}`}
+                    />
+                  </label>
+                  <span className="text-xl text-muted dark:text-dark-muted pt-5">×</span>
+                  <label className="flex-1">
+                    <span className="block text-center text-xs text-muted dark:text-dark-muted mb-1">kcal</span>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      autoFocus={!kcalPer100g}
+                      value={kcalPer100g}
+                      onChange={e => setKcalPer100g(e.target.value)}
                       placeholder="0"
                       className={`w-full ${modalInput}`}
                     />
